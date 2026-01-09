@@ -247,7 +247,12 @@ const Shifts: React.FC = () => {
       setUserFormData({ email: '', password: '', fullName: '', role: 'staff' });
 
     } catch (error: any) {
-      alert('Lỗi tạo tài khoản: ' + error.message);
+      console.error('Create user error:', error);
+      if (error.message.includes('already registered') || error.message.includes('unique constraint')) {
+        alert('Email này đã tồn tại trong hệ thống (có thể từ tài khoản cũ đã bị xóa hồ sơ). Vui lòng sử dụng Email khác.');
+      } else {
+        alert('Lỗi tạo tài khoản: ' + error.message);
+      }
       /* ... existing code ... */
     } finally {
       setIsCreatingUser(false);
