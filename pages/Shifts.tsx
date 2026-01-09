@@ -1,20 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { Shift } from '../types';
+import { supabase, createEphemeralSupabase } from '../lib/supabase';
+import { Shift, UserProfile } from '../types';
 
 const Shifts: React.FC = () => {
   const [shifts, setShifts] = useState<Shift[]>([]);
 
   useEffect(() => {
     const fetchShifts = async () => {
-      const { data } = await supabase.from('shifts').select('*');
+      const { data } = await supabase.from('shifts').select('*').order('time', { ascending: true });
       setShifts((data as any) || []);
     };
     fetchShifts();
   }, []);
 
-  /* ... inside component */
+  // Shift Modal State (Existing)
   const [showModal, setShowModal] = useState(false);
   const [editingShift, setEditingShift] = useState<Shift | null>(null);
   const [formData, setFormData] = useState({
@@ -26,6 +25,17 @@ const Shifts: React.FC = () => {
   });
   const [uploading, setUploading] = useState(false);
 
+  // User Creation State (New)
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userFormData, setUserFormData] = useState({
+    email: '',
+    password: '',
+    fullName: '',
+    role: 'staff' as UserProfile['role']
+  });
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+
+  // Helper Functions
   const openModal = (shift?: Shift) => {
     if (shift) {
       setEditingShift(shift);
@@ -60,7 +70,7 @@ const Shifts: React.FC = () => {
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('products') // Reuse bucket
+        .from('products')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
@@ -113,20 +123,89 @@ const Shifts: React.FC = () => {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!userFormData.email || !userFormData.password || !userFormData.fullName) {
+      return alert('Vui lòng điền đầy đủ thông tin');
+    }
+
+    try {
+      setIsCreatingUser(true);
+
+      // 1. Create user using ephemeral client (so we don't log out admin)
+      const tempSupabase = createEphemeralSupabase();
+
+      const { data: authData, error: authError } = await tempSupabase.auth.signUp({
+        email: userFormData.email,
+        password: userFormData.password,
+        options: {
+          data: {
+            full_name: userFormData.fullName,
+            role: userFormData.role,
+          },
+        },
+      });
+
+      if (authError) throw authError;
+
+      if (!authData.user) throw new Error('Không tạo được user');
+
+      // 2. We can optionally manually insert into profiles if trigger fails/is slow, 
+      // but usually metadata is enough if the trigger exists. 
+      // Let's assume we rely on metadata + trigger, OR we upsert with admin privilege if RLS allows.
+      // Since we are logged in as Admin in the MAIN client ('supabase'), we might have rights to insert into profiles.
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: authData.user.id,
+          email: userFormData.email,
+          full_name: userFormData.fullName,
+          role: userFormData.role
+        });
+
+      if (profileError) {
+        console.warn('Profile creation warning (might be handled by trigger):', profileError);
+      }
+
+      alert(`Đã tạo tài khoản thành công cho ${userFormData.email}`);
+      setShowUserModal(false);
+      setUserFormData({ email: '', password: '', fullName: '', role: 'staff' });
+
+    } catch (error: any) {
+      alert('Lỗi tạo tài khoản: ' + error.message);
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  /* ... rest of existing code ... */
+
   return (
     <div className="bg-white min-h-full pb-20">
       <header className="px-4 py-4 flex items-center justify-between bg-white sticky top-0 z-10 border-b border-gray-50">
         <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-50"><span className="material-symbols-outlined">arrow_back</span></button>
-        <h1 className="text-lg font-bold">Quản lý Ca làm việc</h1>
-        <button
-          onClick={() => openModal()}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-primary/10 text-primary active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined">add</span>
-        </button>
+        <h1 className="text-lg font-bold">Quản lý Nhân viên</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowUserModal(true)}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 active:scale-95 transition-all"
+            title="Tạo tài khoản mới"
+          >
+            <span className="material-symbols-outlined">person_add</span>
+          </button>
+          <button
+            onClick={() => openModal()}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-primary/10 text-primary active:scale-95 transition-all"
+            title="Thêm ca làm việc"
+          >
+            <span className="material-symbols-outlined">add</span>
+          </button>
+        </div>
       </header>
 
-      {/* Calendar Strip */}
+      {/* ... Calendar Strip ... */}
+      {/* ... Summary Cards ... */}
+      {/* ... Shift List ... */}
       <div className="px-4 py-4 border-b border-gray-50">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm font-bold">Tháng {new Date().getMonth() + 1} {new Date().getFullYear()}</p>
@@ -151,7 +230,6 @@ const Shifts: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="flex gap-3 px-4 py-6 overflow-x-auto no-scrollbar">
         {[
           { label: 'Tổng ca', value: shifts.length, icon: 'groups', color: 'bg-blue-50 text-blue-500' },
@@ -173,7 +251,6 @@ const Shifts: React.FC = () => {
         <button className="text-primary text-xs font-bold">Xem tất cả</button>
       </div>
 
-      {/* Shift List */}
       <div className="px-4 space-y-4 pb-24">
         {shifts.map((shift) => (
           <div
@@ -217,19 +294,18 @@ const Shifts: React.FC = () => {
         ))}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Existing Shift Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in">
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-center bg-gray-50 relative">
               <h3 className="font-bold text-lg">{editingShift ? 'Sửa ca làm việc' : 'Thêm ca mới'}</h3>
-              <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center">
+              <button onClick={() => setShowModal(false)} className="absolute right-4 w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-
+            {/* Same content as before... */}
             <div className="p-4 space-y-4 overflow-y-auto">
-              {/* Image Upload */}
               <div className="flex justify-center mb-2">
                 <div className="relative">
                   <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
@@ -311,6 +387,83 @@ const Shifts: React.FC = () => {
                 className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 mt-2 disabled:opacity-50"
               >
                 {uploading ? 'Đang lưu...' : 'Lưu thông tin'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Creation Modal */}
+      {showUserModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-center bg-gray-50 relative">
+              <h3 className="font-bold text-lg">Tạo tài khoản mới</h3>
+              <button onClick={() => setShowUserModal(false)} className="absolute right-4 w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Họ tên nhân viên</label>
+                <input
+                  type="text"
+                  value={userFormData.fullName}
+                  onChange={(e) => setUserFormData({ ...userFormData, fullName: e.target.value })}
+                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
+                  placeholder="Nguyễn Văn A"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Email đăng nhập</label>
+                <input
+                  type="email"
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
+                  placeholder="staff@bakery.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Mật khẩu</label>
+                <input
+                  type="password"
+                  value={userFormData.password}
+                  onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
+                  placeholder="******"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Phân quyền</label>
+                <select
+                  value={userFormData.role}
+                  onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value as any })}
+                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
+                >
+                  <option value="staff">Nhân viên (Cơ bản)</option>
+                  <option value="cashier">Thu ngân</option>
+                  <option value="baker">Thợ bánh</option>
+                  <option value="sales">Sales</option>
+                  <option value="admin">Quản lý (Admin)</option>
+                </select>
+              </div>
+
+              <div className="p-3 bg-yellow-50 rounded-xl flex gap-2 items-start">
+                <span className="material-symbols-outlined text-yellow-600 text-lg mt-0.5">info</span>
+                <p className="text-xs text-yellow-700">Tài khoản sẽ được tạo ngay lập tức. Nhân viên có thể đăng nhập bằng Email và Mật khẩu vừa tạo.</p>
+              </div>
+
+              <button
+                onClick={handleCreateUser}
+                disabled={isCreatingUser}
+                className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 mt-2 flex items-center justify-center gap-2"
+              >
+                {isCreatingUser ? 'Đang tạo...' : 'Xác nhận tạo tài khoản'}
               </button>
             </div>
           </div>

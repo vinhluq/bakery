@@ -8,7 +8,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables. Please check .env file.');
 }
 
-export const supabase = createClient(
+
+
+export const createEphemeralSupabase = () => createClient(
   supabaseUrl || '',
-  supabaseAnonKey || ''
+  supabaseAnonKey || '',
+  {
+    auth: {
+      persistSession: false, // Don't persist session to localStorage
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
+  }
 );
