@@ -264,13 +264,24 @@ const Shifts: React.FC = () => {
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [editFormData, setEditFormData] = useState({
     fullName: '',
-    role: 'staff' as UserProfile['role']
+    role: 'staff' as UserProfile['role'],
+    email: '',
+    password: ''
   });
 
   const handleUpdateUser = async () => {
     if (!editingUser || !editFormData.fullName) return;
 
     try {
+      // Check if critical info changed (Email or Password)
+      const isSensitiveChanged = (editFormData.email !== editingUser.email && editFormData.email !== '') || editFormData.password !== '';
+
+      if (isSensitiveChanged) {
+        if (!confirm('LƯU Ý QUAN TRỌNG:\n\nHệ thống phát hiện bạn muốn thay đổi Email hoặc Mật khẩu.\nDo giới hạn bảo mật, hệ thống KHÔNG THỂ cập nhật trực tiếp tài khoản đăng nhập cũ.\n\nBạn có muốn thực hiện cập nhật Tên/Vai trò và GIỮ NGUYÊN tài khoản đăng nhập cũ không?\n(Để đổi đăng nhập, vui lòng Xóa nhân viên và Tạo mới).')) {
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -281,7 +292,7 @@ const Shifts: React.FC = () => {
 
       if (error) throw error;
 
-      alert('Đã cập nhật thông tin nhân viên thành công');
+      alert('Đã cập nhật thông tin hiển thị (Tên, Vai trò) thành công.');
       setEditingUser(null);
       // Refresh employees list
       const { data: profilesData } = await supabase.from('profiles').select('*');
@@ -295,7 +306,9 @@ const Shifts: React.FC = () => {
     setEditingUser(user);
     setEditFormData({
       fullName: user.full_name,
-      role: user.role
+      role: user.role,
+      email: user.email || '',
+      password: '' // Don't show old password
     });
   };
 
@@ -688,22 +701,36 @@ const Shifts: React.FC = () => {
       {
         editingUser && (
           <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in z-[60]">
-            <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-center bg-gray-50 relative">
+            <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
+              <div className="p-4 border-b border-gray-100 flex items-center justify-center bg-gray-50 relative shrink-0">
                 <h3 className="font-bold text-lg">Sửa thông tin</h3>
                 <button onClick={() => setEditingUser(null)} className="absolute right-4 w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center">
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
 
-              <div className="p-4 space-y-4">
+              <div className="p-4 space-y-4 overflow-y-auto">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1">Email</label>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Email (Chỉ hiển thị)</label>
                   <input
-                    disabled
-                    value={editingUser.email}
-                    className="w-full p-3 bg-gray-100 rounded-xl border-none text-gray-500"
+                    value={editFormData.email}
+                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-primary focus:ring-2"
+                    placeholder="example@bakery.com"
                   />
+                  <p className="text-[10px] text-orange-500 mt-1">* Thay đổi Email yêu cầu tạo lại tài khoản</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Mật khẩu mới (Để trống nếu không đổi)</label>
+                  <input
+                    type="password"
+                    value={editFormData.password}
+                    onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                    className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-primary focus:ring-2"
+                    placeholder="******"
+                  />
+                  <p className="text-[10px] text-orange-500 mt-1">* Thay đổi Mật khẩu yêu cầu tạo lại tài khoản</p>
                 </div>
 
                 <div>
