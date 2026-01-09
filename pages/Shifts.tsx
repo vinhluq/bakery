@@ -282,6 +282,8 @@ const Shifts: React.FC = () => {
         }
       }
 
+      console.log('Updating user:', editingUser.id, 'with role:', editFormData.role);
+
       const { error } = await supabase
         .from('profiles')
         .update({
