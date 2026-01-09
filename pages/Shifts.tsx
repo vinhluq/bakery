@@ -203,9 +203,50 @@ const Shifts: React.FC = () => {
 
     } catch (error: any) {
       alert('Lỗi tạo tài khoản: ' + error.message);
+      /* ... existing code ... */
     } finally {
       setIsCreatingUser(false);
     }
+  };
+
+  // User Management State
+  const [showUserList, setShowUserList] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    fullName: '',
+    role: 'staff' as UserProfile['role']
+  });
+
+  const handleUpdateUser = async () => {
+    if (!editingUser || !editFormData.fullName) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editFormData.fullName,
+          role: editFormData.role
+        })
+        .eq('id', editingUser.id);
+
+      if (error) throw error;
+
+      alert('Đã cập nhật thông tin nhân viên thành công');
+      setEditingUser(null);
+      // Refresh employees list
+      const { data: profilesData } = await supabase.from('profiles').select('*');
+      setEmployees(profilesData || []);
+    } catch (error: any) {
+      alert('Lỗi cập nhật: ' + error.message);
+    }
+  };
+
+  const openEditUser = (user: UserProfile) => {
+    setEditingUser(user);
+    setEditFormData({
+      fullName: user.full_name,
+      role: user.role
+    });
   };
 
   /* ... rest of existing code ... */
@@ -216,6 +257,13 @@ const Shifts: React.FC = () => {
         <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-50"><span className="material-symbols-outlined">arrow_back</span></button>
         <h1 className="text-lg font-bold">Quản lý Nhân viên</h1>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowUserList(true)}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-purple-50 text-purple-600 active:scale-95 transition-all"
+            title="Danh sách nhân viên"
+          >
+            <span className="material-symbols-outlined">group</span>
+          </button>
           <button
             onClick={() => setShowUserModal(true)}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 active:scale-95 transition-all"
@@ -514,9 +562,97 @@ const Shifts: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
-};
+      {/* User List Modal */}
+      {showUserList && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col h-[80vh]">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-center bg-gray-50 relative shrink-0">
+              <h3 className="font-bold text-lg">Danh sách nhân viên</h3>
+              <button onClick={() => setShowUserList(false)} className="absolute right-4 w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
 
-export default Shifts;
+            <div className="p-4 overflow-y-auto space-y-3 flex-1">
+              {employees.map(emp => (
+                <div key={emp.id} className="p-3 border border-gray-100 rounded-xl flex items-center justify-between bg-white hover:border-primary/50 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold">
+                      {emp.full_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{emp.full_name}</p>
+                      <p className="text-xs text-gray-400">{getRoleDisplayName(emp.role)}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => openEditUser(emp)}
+                    className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-primary"
+                  >
+                    <span className="material-symbols-outlined text-lg">edit</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in z-[60]">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-center bg-gray-50 relative">
+              <h3 className="font-bold text-lg">Sửa thông tin</h3>
+              <button onClick={() => setEditingUser(null)} className="absolute right-4 w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Email (Không đổi được)</label>
+                <input
+                  disabled
+                  value={editingUser.email}
+                  className="w-full p-3 bg-gray-100 rounded-xl border-none text-gray-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Họ tên nhân viên</label>
+                <input
+                  type="text"
+                  value={editFormData.fullName}
+                  onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Phân quyền</label>
+                <select
+                  value={editFormData.role}
+                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
+                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
+                >
+                  <option value="staff">Nhân viên (Cơ bản)</option>
+                  <option value="cashier">Thu ngân</option>
+                  <option value="baker">Thợ bánh</option>
+                  <option value="sales">Sales</option>
+                  <option value="admin">Quản lý (Admin)</option>
+                </select>
+              </div>
+
+              <button
+                onClick={handleUpdateUser}
+                className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 mt-2"
+              >
+                Cập nhật thông tin
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      export default Shifts;
