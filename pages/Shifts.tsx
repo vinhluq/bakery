@@ -20,8 +20,8 @@ const SortableUserItem: React.FC<{ user: UserProfile; onEdit: (u: UserProfile) =
       case 'admin': return 'Chủ quán';
       case 'cashier': return 'Thu ngân';
       case 'baker': return 'Thợ bánh';
-      case 'sales': return 'Nhân viên bán hàng';
-      default: return 'Nhân viên bán hàng';
+      case 'sales': return 'Sales';
+      default: return 'Nhân viên';
     }
   };
 
@@ -89,8 +89,8 @@ const Shifts: React.FC = () => {
       case 'admin': return 'Chủ quán';
       case 'cashier': return 'Thu ngân';
       case 'baker': return 'Thợ bánh';
-      case 'sales': return 'Nhân viên bán hàng';
-      default: return 'Nhân viên bán hàng';
+      case 'sales': return 'Sales';
+      default: return 'Nhân viên';
     }
   };
 
