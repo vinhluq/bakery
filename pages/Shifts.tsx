@@ -29,11 +29,11 @@ const SortableUserItem: React.FC<{ user: UserProfile; onEdit: (u: UserProfile) =
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="p-3 border border-gray-100 rounded-xl flex items-center justify-between bg-white hover:border-primary/50 transition-all cursor-move touch-none">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold">
-          {user.full_name.charAt(0).toUpperCase()}
+          {(user.full_name || 'U').charAt(0).toUpperCase()}
         </div>
         <div>
-          <p className="font-bold text-sm">{user.full_name}</p>
-          <p className="text-xs text-gray-400">{getRoleDisplayName(user.role)}</p>
+          <p className="font-bold text-sm">{user.full_name || 'Không tên'}</p>
+          <p className="text-xs text-gray-400">{getRoleDisplayName(user.role || 'staff')}</p>
         </div>
       </div>
       <button
