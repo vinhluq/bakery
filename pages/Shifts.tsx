@@ -1,6 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, createEphemeralSupabase } from '../lib/supabase';
 import { Shift, UserProfile } from '../types';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Sortable Item Component
+const SortableUserItem = ({ user, onEdit }: { user: UserProfile; onEdit: (u: UserProfile) => void }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: user.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Chủ quán';
+      case 'cashier': return 'Thu ngân';
+      case 'baker': return 'Thợ bánh';
+      case 'sales': return 'Nhân viên bán hàng';
+      default: return 'Nhân viên bán hàng';
+    }
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="p-3 border border-gray-100 rounded-xl flex items-center justify-between bg-white hover:border-primary/50 transition-all cursor-move touch-none">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold">
+          {user.full_name.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <p className="font-bold text-sm">{user.full_name}</p>
+          <p className="text-xs text-gray-400">{getRoleDisplayName(user.role)}</p>
+        </div>
+      </div>
+      <button
+        onPointerDown={(e) => e.stopPropagation()} // Prevent drag start on button click
+        onClick={() => onEdit(user)}
+        className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-primary cursor-pointer"
+      >
+        <span className="material-symbols-outlined text-lg">edit</span>
+      </button>
+    </div>
+  );
+};
 
 const Shifts: React.FC = () => {
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -247,6 +291,43 @@ const Shifts: React.FC = () => {
       fullName: user.full_name,
       role: user.role
     });
+  };
+
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setEmployees((items) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over?.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!editingUser) return;
+    const confirmText = `Bạn có chắc muốn xóa nhân viên ${editingUser.full_name}? Hành động này không thể hoàn tác và chỉ xóa thông tin hồ sơ, tài khoản đăng nhập có thể vẫn tồn tại.`;
+    if (!confirm(confirmText)) return;
+
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', editingUser.id);
+      if (error) throw error;
+
+      alert('Đã xóa hồ sơ nhân viên.');
+      setEditingUser(null);
+      setEmployees(prev => prev.filter(emp => emp.id !== editingUser.id));
+    } catch (error: any) {
+      alert('Lỗi xóa: ' + error.message);
+    }
   };
 
   /* ... rest of existing code ... */
@@ -573,26 +654,23 @@ const Shifts: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-4 overflow-y-auto space-y-3 flex-1">
-              {employees.map(emp => (
-                <div key={emp.id} className="p-3 border border-gray-100 rounded-xl flex items-center justify-between bg-white hover:border-primary/50 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold">
-                      {emp.full_name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm">{emp.full_name}</p>
-                      <p className="text-xs text-gray-400">{getRoleDisplayName(emp.role)}</p>
-                    </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={employees.map(e => e.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {employees.map(emp => (
+                      <SortableUserItem key={emp.id} user={emp} onEdit={openEditUser} />
+                    ))}
                   </div>
-                  <button
-                    onClick={() => openEditUser(emp)}
-                    className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-primary"
-                  >
-                    <span className="material-symbols-outlined text-lg">edit</span>
-                  </button>
-                </div>
-              ))}
+                </SortableContext>
+              </DndContext>
             </div>
           </div>
         </div>
@@ -600,7 +678,7 @@ const Shifts: React.FC = () => {
 
       {/* Edit User Modal */}
       {editingUser && (
-        <div className="fixed inset-0 z[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in z-[60]">
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in z-[60]">
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col">
             <div className="p-4 border-b border-gray-100 flex items-center justify-center bg-gray-50 relative">
               <h3 className="font-bold text-lg">Sửa thông tin</h3>
@@ -611,7 +689,7 @@ const Shifts: React.FC = () => {
 
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Email (Không đổi được)</label>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Email</label>
                 <input
                   disabled
                   value={editingUser.email}
@@ -644,15 +722,26 @@ const Shifts: React.FC = () => {
                 </select>
               </div>
 
-              <button
-                onClick={handleUpdateUser}
-                className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 mt-2"
-              >
-                Cập nhật thông tin
-              </button>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={handleDeleteUser}
+                  className="flex-1 py-3 bg-red-50 text-red-500 font-bold rounded-xl active:scale-95 transition-all"
+                >
+                  Xóa nhân viên
+                </button>
+                <button
+                  onClick={handleUpdateUser}
+                  className="flex-[2] py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 active:scale-95 transition-all"
+                >
+                  Cập nhật
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+};
 
-      export default Shifts;
+export default Shifts;
