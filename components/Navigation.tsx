@@ -2,6 +2,8 @@
 import React from 'react';
 import { AppScreen, UserProfile } from '../types';
 
+import { supabase } from '../lib/supabase';
+
 interface NavigationProps {
   currentScreen: AppScreen;
   onNavigate: (screen: AppScreen) => void;
@@ -9,6 +11,10 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ currentScreen, onNavigate, user }) => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   const allNavItems = [
     { screen: AppScreen.DASHBOARD, label: 'Tổng quan', icon: 'dashboard', roles: ['admin', 'cashier', 'sales', 'baker', 'staff'] },
     { screen: AppScreen.POS, label: 'Tạo đơn', icon: 'add_shopping_cart', roles: ['admin', 'cashier', 'sales', 'staff'] },
@@ -17,6 +23,8 @@ const Navigation: React.FC<NavigationProps> = ({ currentScreen, onNavigate, user
     { screen: AppScreen.SHIFTS, label: 'Ca làm', icon: 'schedule', roles: ['admin'] },
     { screen: AppScreen.REPORTS, label: 'Báo cáo', icon: 'bar_chart', roles: ['admin'] },
   ];
+
+
 
   if (!user) return null;
 
@@ -114,7 +122,10 @@ const Navigation: React.FC<NavigationProps> = ({ currentScreen, onNavigate, user
       </nav>
 
       <div className="p-4 border-t border-gray-200">
-        <button className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+        <button
+          onClick={async () => await supabase.auth.signOut()}
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+        >
           <span className="material-symbols-outlined">logout</span>
           <span className="text-sm font-bold">Đăng xuất</span>
         </button>
