@@ -36,7 +36,7 @@ const Debt: React.FC = () => {
 
   // Helper to get initials
   const getInitials = (name: string) => {
-    return name.charAt(0).toUpperCase();
+    return (name || '').charAt(0).toUpperCase();
   };
 
   const openModal = (customer?: CustomerDebt) => {
