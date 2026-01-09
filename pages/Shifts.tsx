@@ -4,16 +4,9 @@ import { Shift, UserProfile } from '../types';
 
 const Shifts: React.FC = () => {
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [employees, setEmployees] = useState<UserProfile[]>([]);
 
-  useEffect(() => {
-    const fetchShifts = async () => {
-      const { data } = await supabase.from('shifts').select('*').order('time', { ascending: true });
-      setShifts((data as any) || []);
-    };
-    fetchShifts();
-  }, []);
-
-  // Shift Modal State (Existing)
+  // Shift Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingShift, setEditingShift] = useState<Shift | null>(null);
   const [formData, setFormData] = useState({
@@ -25,7 +18,7 @@ const Shifts: React.FC = () => {
   });
   const [uploading, setUploading] = useState(false);
 
-  // User Creation State (New)
+  // User Creation State
   const [showUserModal, setShowUserModal] = useState(false);
   const [userFormData, setUserFormData] = useState({
     email: '',
@@ -35,7 +28,44 @@ const Shifts: React.FC = () => {
   });
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
-  // Helper Functions
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: shiftsData } = await supabase.from('shifts').select('*').order('time', { ascending: true });
+      setShifts((shiftsData as any) || []);
+
+      const { data: profilesData } = await supabase.from('profiles').select('*');
+      setEmployees(profilesData || []);
+    };
+    fetchData();
+  }, []);
+
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Chủ quán';
+      case 'cashier': return 'Thu ngân';
+      case 'baker': return 'Thợ bánh';
+      case 'sales': return 'Nhân viên bán hàng';
+      default: return 'Nhân viên bán hàng';
+    }
+  };
+
+  const handleEmployeeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    if (selectedId === 'other') {
+      setFormData({ ...formData, name: '' });
+      return;
+    }
+
+    const employee = employees.find(emp => emp.id === selectedId);
+    if (employee) {
+      setFormData({
+        ...formData,
+        name: employee.full_name,
+        role: getRoleDisplayName(employee.role)
+      });
+    }
+  };
+
   const openModal = (shift?: Shift) => {
     if (shift) {
       setEditingShift(shift);
@@ -328,12 +358,28 @@ const Shifts: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Tên nhân viên</label>
-                <input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
-                  placeholder="Nhập tên..."
-                />
+                <div className="flex flex-col gap-2">
+                  <select
+                    className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
+                    onChange={handleEmployeeSelect}
+                    value={employees.find(e => e.full_name === formData.name)?.id || (formData.name ? 'other' : '')}
+                  >
+                    <option value="">-- Chọn nhân viên --</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>{emp.full_name} ({getRoleDisplayName(emp.role)})</option>
+                    ))}
+                    <option value="other">Khác (Nhập tay)</option>
+                  </select>
+
+                  {(!employees.find(e => e.full_name === formData.name) || employees.find(e => e.full_name === formData.name)?.id === 'other') && (
+                    <input
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-primary focus:ring-2"
+                      placeholder="Nhập tên nhân viên..."
+                    />
+                  )}
+                </div>
               </div>
 
               <div>
