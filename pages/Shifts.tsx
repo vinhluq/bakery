@@ -6,7 +6,8 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from '@dnd-kit/utilities';
 
 // Sortable Item Component
-const SortableUserItem = ({ user, onEdit }: { user: UserProfile; onEdit: (u: UserProfile) => void }) => {
+// Sortable Item Component
+const SortableUserItem: React.FC<{ user: UserProfile; onEdit: (u: UserProfile) => void }> = ({ user, onEdit }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: user.id });
 
   const style = {
@@ -643,7 +644,8 @@ const Shifts: React.FC = () => {
             </div>
           </div>
         </div>
-      {/* User List Modal */}
+      )}
+
       {showUserList && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in">
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col h-[80vh]">
@@ -674,73 +676,76 @@ const Shifts: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* Edit User Modal */}
-      {editingUser && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in z-[60]">
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-center bg-gray-50 relative">
-              <h3 className="font-bold text-lg">Sửa thông tin</h3>
-              <button onClick={() => setEditingUser(null)} className="absolute right-4 w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="p-4 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Email</label>
-                <input
-                  disabled
-                  value={editingUser.email}
-                  className="w-full p-3 bg-gray-100 rounded-xl border-none text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Họ tên nhân viên</label>
-                <input
-                  type="text"
-                  value={editFormData.fullName}
-                  onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
-                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Phân quyền</label>
-                <select
-                  value={editFormData.role}
-                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
-                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
-                >
-                  <option value="staff">Nhân viên (Cơ bản)</option>
-                  <option value="cashier">Thu ngân</option>
-                  <option value="baker">Thợ bánh</option>
-                  <option value="sales">Sales</option>
-                  <option value="admin">Quản lý (Admin)</option>
-                </select>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  onClick={handleDeleteUser}
-                  className="flex-1 py-3 bg-red-50 text-red-500 font-bold rounded-xl active:scale-95 transition-all"
-                >
-                  Xóa nhân viên
+      {
+        editingUser && (
+          <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in z-[60]">
+            <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col">
+              <div className="p-4 border-b border-gray-100 flex items-center justify-center bg-gray-50 relative">
+                <h3 className="font-bold text-lg">Sửa thông tin</h3>
+                <button onClick={() => setEditingUser(null)} className="absolute right-4 w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center">
+                  <span className="material-symbols-outlined">close</span>
                 </button>
-                <button
-                  onClick={handleUpdateUser}
-                  className="flex-[2] py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 active:scale-95 transition-all"
-                >
-                  Cập nhật
-                </button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Email</label>
+                  <input
+                    disabled
+                    value={editingUser.email}
+                    className="w-full p-3 bg-gray-100 rounded-xl border-none text-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Họ tên nhân viên</label>
+                  <input
+                    type="text"
+                    value={editFormData.fullName}
+                    onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                    className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Phân quyền</label>
+                  <select
+                    value={editFormData.role}
+                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
+                    className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
+                  >
+                    <option value="staff">Nhân viên (Cơ bản)</option>
+                    <option value="cashier">Thu ngân</option>
+                    <option value="baker">Thợ bánh</option>
+                    <option value="sales">Sales</option>
+                    <option value="admin">Quản lý (Admin)</option>
+                  </select>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={handleDeleteUser}
+                    className="flex-1 py-3 bg-red-50 text-red-500 font-bold rounded-xl active:scale-95 transition-all"
+                  >
+                    Xóa nhân viên
+                  </button>
+                  <button
+                    onClick={handleUpdateUser}
+                    className="flex-[2] py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 active:scale-95 transition-all"
+                  >
+                    Cập nhật
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 
