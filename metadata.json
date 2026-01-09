@@ -1,0 +1,5 @@
+{
+  "name": "BakeryOS",
+  "description": "A comprehensive mobile-first bakery management application featuring POS, shift management, inventory tracking, and customer debt monitoring.",
+  "requestFramePermissions": []
+}
