@@ -264,7 +264,7 @@ const Shifts: React.FC = () => {
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [editFormData, setEditFormData] = useState({
     fullName: '',
-    role: 'staff' as UserProfile['role'],
+    role: 'sales' as UserProfile['role'],
     email: '',
     password: ''
   });
@@ -641,10 +641,9 @@ const Shifts: React.FC = () => {
                   onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value as any })}
                   className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
                 >
-                  <option value="staff">Nhân viên (Cơ bản)</option>
+                  <option value="sales">Sales</option>
                   <option value="cashier">Thu ngân</option>
                   <option value="baker">Thợ bánh</option>
-                  <option value="sales">Sales</option>
                   <option value="admin">Quản lý (Admin)</option>
                 </select>
               </div>
@@ -752,10 +751,9 @@ const Shifts: React.FC = () => {
                     onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
                     className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
                   >
-                    <option value="staff">Nhân viên (Cơ bản)</option>
+                    <option value="sales">Sales</option>
                     <option value="cashier">Thu ngân</option>
                     <option value="baker">Thợ bánh</option>
-                    <option value="sales">Sales</option>
                     <option value="admin">Quản lý (Admin)</option>
                   </select>
                 </div>

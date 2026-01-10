@@ -122,6 +122,23 @@ const Navigation: React.FC<NavigationProps> = ({ currentScreen, onNavigate, user
       </nav>
 
       <div className="p-4 border-t border-gray-200">
+        <div className="flex items-center gap-3 px-4 py-3 mb-2 rounded-xl bg-gray-50">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+            {user.full_name?.charAt(0) || 'U'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-gray-900 truncate">
+              {user.full_name || 'Người dùng'}
+            </p>
+            <p className="text-xs text-gray-500 capitalize truncate">
+              {user.role === 'admin' ? 'Quản lý' :
+                user.role === 'cashier' ? 'Thu ngân' :
+                  user.role === 'baker' ? 'Thợ bánh' : 'Nhân viên'}
+            </p>
+          </div>
+        </div>
+
+
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
@@ -133,8 +150,35 @@ const Navigation: React.FC<NavigationProps> = ({ currentScreen, onNavigate, user
     </aside>
   );
 
+  const renderMobileHeader = () => (
+    <div className="md:hidden w-full bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+          {user.full_name?.charAt(0) || 'U'}
+        </div>
+        <div>
+          <p className="text-sm font-bold text-gray-900 leading-tight">
+            {user.full_name || 'Người dùng'}
+          </p>
+          <p className="text-[10px] text-gray-500 font-medium capitalize">
+            {user.role === 'admin' ? 'Quản lý' :
+              user.role === 'cashier' ? 'Thu ngân' :
+                user.role === 'baker' ? 'Thợ bánh' : 'Nhân viên'}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={handleLogout}
+        className="w-9 h-9 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"
+      >
+        <span className="material-symbols-outlined text-[20px]">logout</span>
+      </button>
+    </div>
+  );
+
   return (
     <>
+      {renderMobileHeader()}
       {renderBottomNav()}
       {renderSidebar()}
     </>
