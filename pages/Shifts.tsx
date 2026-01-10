@@ -228,27 +228,25 @@ const Shifts: React.FC = () => {
 
       if (!authData.user) throw new Error('Không tạo được user');
 
-      // 2. We can optionally manually insert into profiles if trigger fails/is slow, 
-      // but usually metadata is enough if the trigger exists. 
-      // Let's assume we rely on metadata + trigger, OR we upsert with admin privilege if RLS allows.
-      // Since we are logged in as Admin in the MAIN client ('supabase'), we might have rights to insert into profiles.
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: authData.user.id,
-          email: userFormData.email,
-          full_name: userFormData.fullName,
-          role: userFormData.role
-        });
+      // 2. Use RPC to create profile (bypasses RLS issues)
+      const { error: profileError } = await supabase.rpc('create_emp_profile', {
+        p_id: authData.user.id,
+        p_email: userFormData.email,
+        p_full_name: userFormData.fullName,
+        p_role: userFormData.role
+      });
 
       if (profileError) {
-        console.warn('Profile creation warning (might be handled by trigger):', profileError);
+        throw new Error('Lỗi tạo hồ sơ: ' + profileError.message);
       }
 
-      alert(`Đã tạo tài khoản thành công cho ${userFormData.email}`);
+      alert(`Đã tạo tài khoản và hồ sơ thành công cho ${userFormData.email}`);
       setShowUserModal(false);
-      setUserFormData({ email: '', password: '', fullName: '', role: 'sales' });
+      setUserFormData({ email: '', password: '', fullName: '', role: 'sales' as UserProfile['role'] });
+
+      // Refresh list
+      const { data: profilesData } = await supabase.from('profiles').select('*');
+      setEmployees(profilesData || []);
 
     } catch (error: any) {
       console.error('Create user error:', error);
