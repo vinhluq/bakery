@@ -21,7 +21,7 @@ const SortableUserItem: React.FC<{ user: UserProfile; onEdit: (u: UserProfile) =
       case 'cashier': return 'Thu ngân';
       case 'baker': return 'Thợ bánh';
       case 'sales': return 'Sales';
-      default: return 'Nhân viên';
+      default: return 'Sales';
     }
   };
 
@@ -33,7 +33,7 @@ const SortableUserItem: React.FC<{ user: UserProfile; onEdit: (u: UserProfile) =
         </div>
         <div>
           <p className="font-bold text-sm">{user.full_name || 'Không tên'}</p>
-          <p className="text-xs text-gray-400">{getRoleDisplayName(user.role || 'staff')}</p>
+          <p className="text-xs text-gray-400">{getRoleDisplayName(user.role || 'sales')}</p>
         </div>
       </div>
       <button
@@ -69,7 +69,7 @@ const Shifts: React.FC = () => {
     email: '',
     password: '',
     fullName: '',
-    role: 'staff' as UserProfile['role']
+    role: 'sales' as UserProfile['role']
   });
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
@@ -90,7 +90,7 @@ const Shifts: React.FC = () => {
       case 'cashier': return 'Thu ngân';
       case 'baker': return 'Thợ bánh';
       case 'sales': return 'Sales';
-      default: return 'Nhân viên';
+      default: return 'Sales';
     }
   };
 
@@ -244,7 +244,7 @@ const Shifts: React.FC = () => {
 
       alert(`Đã tạo tài khoản thành công cho ${userFormData.email}`);
       setShowUserModal(false);
-      setUserFormData({ email: '', password: '', fullName: '', role: 'staff' });
+      setUserFormData({ email: '', password: '', fullName: '', role: 'sales' });
 
     } catch (error: any) {
       console.error('Create user error:', error);
@@ -619,7 +619,7 @@ const Shifts: React.FC = () => {
                   value={userFormData.email}
                   onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
                   className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
-                  placeholder="staff@bakery.com"
+                  placeholder="sales@bakery.com"
                 />
               </div>
 

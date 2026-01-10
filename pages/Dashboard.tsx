@@ -469,6 +469,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-75 hover:opacity-100 transition-opacity">
               {orders
                 .filter(o => o.status === 'completed')
+                .sort((a, b) => {
+                  const timeA = new Date(a.completed_at || a.delivery_date).getTime();
+                  const timeB = new Date(b.completed_at || b.delivery_date).getTime();
+                  return timeB - timeA;
+                })
                 .slice(0, 5) // Limit to last 5 for cleanliness
                 .map(order => (
                   <div

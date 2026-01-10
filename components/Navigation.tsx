@@ -16,10 +16,10 @@ const Navigation: React.FC<NavigationProps> = ({ currentScreen, onNavigate, user
   };
 
   const allNavItems = [
-    { screen: AppScreen.DASHBOARD, label: 'Tổng quan', icon: 'dashboard', roles: ['admin', 'cashier', 'sales', 'baker', 'staff'] },
-    { screen: AppScreen.POS, label: 'Tạo đơn', icon: 'add_shopping_cart', roles: ['admin', 'cashier', 'sales', 'staff'] },
-    { screen: AppScreen.PRODUCTS, label: 'Sản phẩm', icon: 'bakery_dining', roles: ['admin', 'cashier', 'sales', 'staff'] },
-    { screen: AppScreen.DEBT, label: 'Công nợ', icon: 'account_balance_wallet', roles: ['admin', 'cashier', 'sales', 'staff'] },
+    { screen: AppScreen.DASHBOARD, label: 'Tổng quan', icon: 'dashboard', roles: ['admin', 'cashier', 'sales', 'baker'] },
+    { screen: AppScreen.POS, label: 'Tạo đơn', icon: 'add_shopping_cart', roles: ['admin', 'cashier', 'sales'] },
+    { screen: AppScreen.PRODUCTS, label: 'Sản phẩm', icon: 'bakery_dining', roles: ['admin', 'cashier', 'sales'] },
+    { screen: AppScreen.DEBT, label: 'Công nợ', icon: 'account_balance_wallet', roles: ['admin', 'cashier', 'sales'] },
     { screen: AppScreen.SHIFTS, label: 'Ca làm', icon: 'schedule', roles: ['admin'] },
     { screen: AppScreen.REPORTS, label: 'Báo cáo', icon: 'bar_chart', roles: ['admin'] },
   ];
@@ -28,7 +28,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentScreen, onNavigate, user
 
   if (!user) return null;
 
-  const userRole = user.role || 'staff'; // Fallback to staff if role is missing
+  const userRole = user.role || 'sales'; // Fallback to sales if role is missing
   const navItems = allNavItems.filter(item => item.roles.includes(userRole));
 
   const renderBottomNav = () => (

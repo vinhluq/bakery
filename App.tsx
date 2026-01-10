@@ -58,7 +58,7 @@ const App: React.FC = () => {
         setUser({ ...data, email });
       } else {
         // Fallback if profile doesn't exist yet (race condition with trigger)
-        setUser({ id: userId, email, full_name: 'Nhân viên', role: 'staff' });
+        setUser({ id: userId, email, full_name: 'Nhân viên Sales', role: 'sales' });
       }
 
       setCurrentScreen(AppScreen.DASHBOARD);

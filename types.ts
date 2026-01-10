@@ -33,7 +33,7 @@ export interface UserProfile {
   id: string;
   email: string;
   full_name: string;
-  role: 'admin' | 'staff' | 'cashier' | 'baker' | 'sales';
+  role: 'admin' | 'cashier' | 'baker' | 'sales';
 }
 
 export interface Product {
