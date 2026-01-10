@@ -163,7 +163,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentScreen, onNavigate, user
           <p className="text-[10px] text-gray-500 font-medium capitalize">
             {user.role === 'admin' ? 'Quản lý' :
               user.role === 'cashier' ? 'Thu ngân' :
-                user.role === 'baker' ? 'Thợ bánh' : 'Sales'}
+                user.role === 'baker' ? 'Thợ bánh' : 'Nhân viên bán hàng'}
           </p>
         </div>
       </div>
