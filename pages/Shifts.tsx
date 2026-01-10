@@ -210,7 +210,7 @@ const Shifts: React.FC = () => {
     try {
       setIsCreatingUser(true);
 
-      // 1. Create user using ephemeral client (so we don't log out admin)
+      // 1. Create user using ephemeral client
       const tempSupabase = createEphemeralSupabase();
 
       const { data: authData, error: authError } = await tempSupabase.auth.signUp({
@@ -226,7 +226,7 @@ const Shifts: React.FC = () => {
 
       if (authError) throw authError;
 
-      if (!authData.user) throw new Error('Không tạo được user');
+      if (!authData.user) throw new Error('Không tạo được user (API không trả về dữ liệu).');
 
       // 2. Use RPC to create profile (bypasses RLS issues)
       const { error: profileError } = await supabase.rpc('create_emp_profile', {
@@ -250,12 +250,14 @@ const Shifts: React.FC = () => {
 
     } catch (error: any) {
       console.error('Create user error:', error);
-      if (error.message.includes('already registered') || error.message.includes('unique constraint')) {
-        alert('Email này đã tồn tại trong hệ thống (có thể từ tài khoản cũ đã bị xóa hồ sơ). Vui lòng sử dụng Email khác.');
-      } else {
-        alert('Lỗi tạo tài khoản: ' + error.message);
+      // Already alerted details above, but catch generic ones
+      if (!error.message.includes('Lỗi Đăng Ký') && !error.message.includes('Lỗi Tạo Hồ Sơ')) {
+        if (error.message.includes('already registered')) {
+          alert('Email này đã tồn tại.');
+        } else {
+          alert('Lỗi không xác định: ' + error.message);
+        }
       }
-      /* ... existing code ... */
     } finally {
       setIsCreatingUser(false);
     }

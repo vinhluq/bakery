@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { CustomerDebt, DebtTransaction } from '../types';
+import { CustomerDebt, DebtTransaction, UserProfile } from '../types';
 
-const Debt: React.FC = () => {
+const Debt: React.FC<{ user: UserProfile | null }> = ({ user }) => {
   const [debts, setDebts] = useState<CustomerDebt[]>([]);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -225,12 +225,15 @@ const Debt: React.FC = () => {
       <header className="px-4 py-4 flex items-center justify-between bg-background sticky top-0 z-10">
         <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5"><span className="material-symbols-outlined">filter_list</span></button>
         <h1 className="text-lg font-bold">Quản lý Khách hàng</h1>
-        <button
-          onClick={() => openModal()}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined">add</span>
-        </button>
+        {['admin'].includes(user?.role || '') && (
+          <button
+            onClick={() => openModal()}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined">add</span>
+          </button>
+        )}
+        {!['admin'].includes(user?.role || '') && <div className="w-10"></div>}
       </header>
 
       {/* ... Search Bar, Summary Row, Tabs ... */}
@@ -249,25 +252,27 @@ const Debt: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary Row */}
-      <div className="grid grid-cols-2 gap-4 px-4 mb-6">
-        <div className="bg-primary/10 p-4 rounded-2xl border border-primary/10">
-          <div className="flex justify-between items-start mb-3">
-            <span className="text-[10px] font-bold text-primary uppercase">Tổng phải thu</span>
-            <span className="material-symbols-outlined text-primary text-lg">account_balance_wallet</span>
+      {/* Summary Row - Hidden for Sales/Cashier */}
+      {['admin'].includes(user?.role || '') && (
+        <div className="grid grid-cols-2 gap-4 px-4 mb-6">
+          <div className="bg-primary/10 p-4 rounded-2xl border border-primary/10">
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-[10px] font-bold text-primary uppercase">Tổng phải thu</span>
+              <span className="material-symbols-outlined text-primary text-lg">account_balance_wallet</span>
+            </div>
+            <p className="text-xl font-bold text-primary">15.450k</p>
+            <p className="text-[9px] font-bold text-text-sub mt-1">+1.2tr hôm nay</p>
           </div>
-          <p className="text-xl font-bold text-primary">15.450k</p>
-          <p className="text-[9px] font-bold text-text-sub mt-1">+1.2tr hôm nay</p>
-        </div>
-        <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
-          <div className="flex justify-between items-start mb-3">
-            <span className="text-[10px] font-bold text-red-500 uppercase">Quá hạn</span>
-            <span className="material-symbols-outlined text-red-500 text-lg">warning</span>
+          <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-[10px] font-bold text-red-500 uppercase">Quá hạn</span>
+              <span className="material-symbols-outlined text-red-500 text-lg">warning</span>
+            </div>
+            <p className="text-xl font-bold text-red-600">2.100k</p>
+            <p className="text-[9px] font-bold text-red-400 mt-1">3 khách hàng</p>
           </div>
-          <p className="text-xl font-bold text-red-600">2.100k</p>
-          <p className="text-[9px] font-bold text-red-400 mt-1">3 khách hàng</p>
         </div>
-      </div>
+      )}
 
 
 
@@ -301,17 +306,26 @@ const Debt: React.FC = () => {
             </div>
             <div className="flex flex-col items-end gap-2">
               <p className={`text-sm font-bold ${debt.status === 'overdue' ? 'text-red-600' : debt.status === 'paid' ? 'text-green-600' : 'text-primary'}`}>
-                {debt.amount.toLocaleString()}đ
+                {['admin'].includes(user?.role || '') ? `${debt.amount.toLocaleString()}đ` : '***'}
               </p>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  openHistory(debt);
+                  if (['sales', 'cashier'].includes(user?.role || '')) {
+                    // Direct repayment for staff
+                    setSelectedCustomer(debt);
+                    openTransaction('repayment');
+                  } else {
+                    openHistory(debt);
+                  }
                 }}
                 className={`px-3 py-1 rounded-lg text-[9px] font-bold transition-all ${debt.status === 'paid' ? 'bg-gray-50 text-text-sub' : 'bg-primary/10 text-primary active:bg-primary active:text-white'
                   }`}
               >
-                {debt.status === 'paid' ? 'Lịch sử' : 'Xử lý nợ'}
+                {['sales', 'cashier'].includes(user?.role || '')
+                  ? 'Khách hàng trả'
+                  : (debt.status === 'paid' ? 'Lịch sử' : 'Xử lý nợ')
+                }
               </button>
             </div>
           </div>
@@ -477,7 +491,7 @@ const Debt: React.FC = () => {
         <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white w-full max-w-xs rounded-2xl p-4 animate-scale-up">
             <h3 className="font-bold text-center mb-4 text-lg">
-              {transactionType === 'debt' ? 'Ghi nợ mới' : 'Thu tiền khách'}
+              {transactionType === 'debt' ? 'Ghi nợ mới' : 'Khách hàng trả nợ'}
             </h3>
             <input
               type="number"

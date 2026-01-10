@@ -80,7 +80,7 @@ const App: React.FC = () => {
       case AppScreen.PRODUCTS:
         return <Products user={user} />;
       case AppScreen.DEBT:
-        return <Debt />;
+        return <Debt user={user} />;
       case AppScreen.POS:
         return <POS />;
       case AppScreen.REPORTS:
