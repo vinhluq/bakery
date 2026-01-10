@@ -40,9 +40,10 @@ const Products: React.FC<ProductsProps> = ({ user }) => {
   const categories = [
     { name: 'Tất cả', icon: 'check' },
     { name: 'Bánh mì', icon: 'bakery_dining' },
+    { name: 'Bánh bao', icon: 'lunch_dining' },
     { name: 'Bánh ngọt', icon: 'cake' },
-    { name: 'Đồ uống', icon: 'local_cafe' },
-    { name: 'Bánh bao', icon: 'lunch_dining' }
+    { name: 'Thực phẩm', icon: 'inventory_2' },
+    { name: 'Đồ uống', icon: 'local_cafe' }
   ];
 
   useEffect(() => {

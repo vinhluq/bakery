@@ -336,7 +336,7 @@ const POS: React.FC = () => {
 
           {/* Categories chips */}
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 items-center">
-            {['Tất cả', 'Bánh mì', 'Bánh ngọt', 'Đồ uống', 'Bánh bao'].map((cat, i) => (
+            {['Tất cả', 'Bánh mì', 'Bánh bao', 'Bánh ngọt', 'Thực phẩm', 'Đồ uống'].map((cat, i) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
