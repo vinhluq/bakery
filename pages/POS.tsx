@@ -258,6 +258,31 @@ const POS: React.FC = () => {
     const matchesCategory = selectedCategory === 'Tất cả' || p.category === selectedCategory;
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
+  }).sort((a, b) => {
+    // Custom priority sort
+    const priorityList = [
+      'Bánh mì không',
+      'Bánh mì thịt xíu',
+      'Bánh bao thịt 15k',
+      'Bánh bao chay'
+    ];
+
+    // Normalize names for comparison (optional but safer)
+    const nameA = a.name.trim();
+    const nameB = b.name.trim();
+
+    const indexA = priorityList.indexOf(nameA);
+    const indexB = priorityList.indexOf(nameB);
+
+    // If both are in priority list, sort by index
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+
+    // If one is in priority list, it comes first
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+
+    // Otherwise sort by name (default)
+    return nameA.localeCompare(nameB, 'vi');
   });
 
   return (
