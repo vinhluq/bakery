@@ -20,8 +20,8 @@ const SortableUserItem: React.FC<{ user: UserProfile; onEdit: (u: UserProfile) =
       case 'admin': return 'Chủ quán';
       case 'cashier': return 'Thu ngân';
       case 'baker': return 'Thợ bánh';
-      case 'sales': return 'Sales';
-      default: return 'Sales';
+      case 'sales': return 'Nhân viên bán hàng';
+      default: return 'Nhân viên bán hàng';
     }
   };
 
@@ -89,8 +89,8 @@ const Shifts: React.FC = () => {
       case 'admin': return 'Chủ quán';
       case 'cashier': return 'Thu ngân';
       case 'baker': return 'Thợ bánh';
-      case 'sales': return 'Sales';
-      default: return 'Sales';
+      case 'sales': return 'Nhân viên bán hàng';
+      default: return 'Nhân viên bán hàng';
     }
   };
 
@@ -641,7 +641,7 @@ const Shifts: React.FC = () => {
                   onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value as any })}
                   className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
                 >
-                  <option value="sales">Sales</option>
+                  <option value="sales">Nhân viên bán hàng</option>
                   <option value="cashier">Thu ngân</option>
                   <option value="baker">Thợ bánh</option>
                   <option value="admin">Quản lý (Admin)</option>
@@ -751,7 +751,7 @@ const Shifts: React.FC = () => {
                     onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
                     className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-primary focus:ring-2"
                   >
-                    <option value="sales">Sales</option>
+                    <option value="sales">Nhân viên bán hàng</option>
                     <option value="cashier">Thu ngân</option>
                     <option value="baker">Thợ bánh</option>
                     <option value="admin">Quản lý (Admin)</option>
