@@ -73,6 +73,10 @@ const Shifts: React.FC = () => {
   });
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
+  // Statistics State
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: shiftsData } = await supabase.from('shifts').select('*').order('time', { ascending: true });
@@ -365,6 +369,13 @@ const Shifts: React.FC = () => {
             title="Danh sách nhân viên"
           >
             <span className="material-symbols-outlined">group</span>
+          </button>
+          <button
+            onClick={() => setShowStatsModal(true)}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-green-50 text-green-600 active:scale-95 transition-all"
+            title="Thống kê lương"
+          >
+            <span className="material-symbols-outlined">payments</span>
           </button>
           <button
             onClick={() => setShowUserModal(true)}
@@ -777,6 +788,88 @@ const Shifts: React.FC = () => {
           </div>
         )
       }
+
+      {/* Statistics Modal */}
+      {showStatsModal && (
+        <div className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <h3 className="font-bold text-lg">Thống kê & Lương</h3>
+              <button onClick={() => setShowStatsModal(false)} className="w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center shadow-sm">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
+              <button
+                onClick={() => setSelectedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined">chevron_left</span>
+              </button>
+              <span className="font-bold text-lg">
+                Tháng {selectedMonth.getMonth() + 1}/{selectedMonth.getFullYear()}
+              </span>
+              <button
+                onClick={() => setSelectedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined">chevron_right</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {(() => {
+                // Filter shifts by selected month
+                const monthShifts = shifts.filter(s => {
+                  const shiftDate = s.created_at ? new Date(s.created_at) : new Date(); // Fallback to now if missing
+                  return shiftDate.getMonth() === selectedMonth.getMonth() &&
+                    shiftDate.getFullYear() === selectedMonth.getFullYear() &&
+                    s.status === 'completed'; // Only count completed shifts
+                });
+
+                // Group by employee name
+                const stats = employees.map(emp => {
+                  const empShifts = monthShifts.filter(s => s.name === emp.full_name);
+                  return {
+                    ...emp,
+                    totalShifts: empShifts.length,
+                    totalHours: empShifts.length * 7 // Est. 7 hours per shift
+                  };
+                }).sort((a, b) => b.totalShifts - a.totalShifts);
+
+                return (
+                  <div className="space-y-3">
+                    {stats.map(stat => (
+                      <div key={stat.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-2xl bg-gray-50/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-bold text-gray-500 text-sm">
+                            {(stat.full_name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm">{stat.full_name}</p>
+                            <p className="text-xs text-text-sub">{getRoleDisplayName(stat.role)}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-lg text-primary">{stat.totalShifts} <span className="text-xs text-gray-500 font-normal">ca</span></p>
+                          <p className="text-[10px] text-gray-400">~{stat.totalHours} giờ</p>
+                        </div>
+                      </div>
+                    ))}
+                    {stats.length === 0 && <p className="text-center text-gray-400 py-8">Chưa có dữ liệu nhân viên</p>}
+                  </div>
+                );
+              })()}
+
+              <div className="p-3 bg-blue-50 rounded-xl text-blue-700 text-xs">
+                <p className="font-bold mb-1 flex items-center gap-1"><span className="material-symbols-outlined text-sm">info</span> Lưu ý:</p>
+                <p>Số liệu chỉ tính các ca có trạng thái <b>"Đã xong"</b>. Vui lòng đảm bảo cập nhật trạng thái ca làm việc đúng thực tế.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 };

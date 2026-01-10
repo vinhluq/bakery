@@ -57,6 +57,7 @@ export interface Shift {
   time: string;
   status: 'active' | 'upcoming' | 'completed';
   image: string;
+  created_at?: string; // Optional for compatibility, but we will fetch it
 }
 
 export interface CustomerDebt {
