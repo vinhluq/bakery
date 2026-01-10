@@ -42,7 +42,7 @@ const Products: React.FC<ProductsProps> = ({ user }) => {
     { name: 'Bánh mì', icon: 'bakery_dining' },
     { name: 'Bánh ngọt', icon: 'cake' },
     { name: 'Đồ uống', icon: 'local_cafe' },
-    { name: 'Combo', icon: 'lunch_dining' }
+    { name: 'Bánh bao', icon: 'lunch_dining' }
   ];
 
   useEffect(() => {
