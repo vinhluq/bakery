@@ -29,7 +29,9 @@ const Products: React.FC<ProductsProps> = ({ user }) => {
     wholesale_price: '',
     image: '',
     category: 'Bánh mì',
-    stock: 0
+    stock: 0,
+    base_product_id: '',
+    isComposite: false
   });
 
   const [uploading, setUploading] = useState(false);
@@ -122,7 +124,9 @@ const Products: React.FC<ProductsProps> = ({ user }) => {
         wholesale_price: (product.wholesale_price || product.price).toString(),
         image: product.image,
         category: product.category,
-        stock: typeof product.stock === 'number' ? product.stock : 0
+        stock: typeof product.stock === 'number' ? product.stock : 0,
+        base_product_id: product.base_product_id || '',
+        isComposite: !!product.base_product_id
       });
     } else {
       setEditingProduct(null);
@@ -132,7 +136,9 @@ const Products: React.FC<ProductsProps> = ({ user }) => {
         wholesale_price: '',
         image: '',
         category: 'Bánh mì',
-        stock: 0
+        stock: 0,
+        base_product_id: '',
+        isComposite: false
       });
     }
     setShowProductModal(true);
@@ -178,7 +184,8 @@ const Products: React.FC<ProductsProps> = ({ user }) => {
       wholesale_price: parseInt(productForm.wholesale_price || productForm.price),
       image: productForm.image || 'https://via.placeholder.com/150',
       category: productForm.category,
-      stock: productForm.stock
+      stock: (productForm as any).isComposite ? 0 : productForm.stock,
+      base_product_id: (productForm as any).isComposite && (productForm as any).base_product_id ? (productForm as any).base_product_id : null
     };
 
     try {
@@ -465,6 +472,42 @@ const Products: React.FC<ProductsProps> = ({ user }) => {
                   placeholder="Ví dụ: Bánh mì Pate"
                 />
               </div>
+
+              {/* Composite Product Toggle */}
+              <div className="bg-orange-50 p-3 rounded-xl border border-orange-100">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={(productForm as any).isComposite}
+                      onChange={(e) => setProductForm({ ...productForm, isComposite: e.target.checked } as any)}
+                    />
+                    <div className="w-10 h-6 bg-gray-200 rounded-full peer peer-checked:bg-primary transition-all"></div>
+                    <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-4"></div>
+                  </div>
+                  <span className="text-sm font-bold text-gray-700">Đây là món chế biến (Combo)?</span>
+                </label>
+                {(productForm as any).isComposite && (
+                  <div className="mt-3 animate-fade-in">
+                    <label className="block text-xs font-bold text-gray-500 mb-1">Món gốc (trừ kho)</label>
+                    <select
+                      className="w-full p-2 bg-white rounded-lg border border-orange-200 text-sm focus:ring-primary focus:ring-1"
+                      value={(productForm as any).base_product_id}
+                      onChange={(e) => setProductForm({ ...productForm, base_product_id: e.target.value } as any)}
+                    >
+                      <option value="">-- Chọn món gốc --</option>
+                      {products.filter(p => p.id !== editingProduct?.id).map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-orange-600 mt-1 italic">
+                      * Khi bán món này, hệ thống sẽ trừ kho của món gốc đã chọn.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Giá lẻ</label>

@@ -44,6 +44,7 @@ export interface Product {
   wholesale_price?: number;
   stock: number | 'unlimited';
   image: string;
+  base_product_id?: string;
 }
 
 export interface CartItem extends Product {
