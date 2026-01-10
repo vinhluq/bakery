@@ -377,13 +377,7 @@ const Shifts: React.FC = () => {
           >
             <span className="material-symbols-outlined">payments</span>
           </button>
-          <button
-            onClick={() => setShowUserModal(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 active:scale-95 transition-all"
-            title="Tạo tài khoản mới"
-          >
-            <span className="material-symbols-outlined">person_add</span>
-          </button>
+
           <button
             onClick={() => openModal()}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-primary/10 text-primary active:scale-95 transition-all"
@@ -679,11 +673,19 @@ const Shifts: React.FC = () => {
       {showUserList && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-32 animate-fade-in">
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col h-[80vh]">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-center bg-gray-50 relative shrink-0">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50 relative shrink-0">
               <h3 className="font-bold text-lg">Danh sách nhân viên</h3>
-              <button onClick={() => setShowUserList(false)} className="absolute right-4 w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center">
-                <span className="material-symbols-outlined">close</span>
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setShowUserList(false); setShowUserModal(true); }}
+                  className="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-xl flex items-center gap-1 hover:bg-primary/90 transition-all"
+                >
+                  <span className="material-symbols-outlined text-sm">add</span> Thêm mới
+                </button>
+                <button onClick={() => setShowUserList(false)} className="w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center">
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
             </div>
 
             <div className="p-4 overflow-y-auto flex-1">
