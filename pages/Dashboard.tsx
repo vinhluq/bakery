@@ -30,6 +30,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return localISOTime;
   };
 
+  const getCurrentShift = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Ca Sáng';
+    if (hour >= 12 && hour < 20) return 'Ca Chiều';
+    return 'Ca Tối';
+  };
+
   const [formData, setFormData] = useState({
     customer_name: '',
     phone: '',
@@ -252,7 +259,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       <div className="flex gap-2">
         <div className="flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full border border-primary/10">
           <span className="material-symbols-outlined text-primary text-sm">schedule</span>
-          <span className="text-xs font-bold text-primary">Ca Sáng</span>
+          <span className="text-xs font-bold text-primary">{getCurrentShift()}</span>
         </div>
         <div className="flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-100 shadow-sm">
           <span className="material-symbols-outlined text-gray-400 text-sm">calendar_today</span>
