@@ -427,7 +427,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="material-symbols-outlined text-[16px]">add</span>
               Tạo đơn
             </button>
-            <button 
+            <button
               onClick={() => setShowAllOrders(!showAllOrders)}
               className="text-xs font-bold text-primary"
             >
@@ -619,7 +619,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       </div>
                       <div className="text-right shrink-0">
                         <span className="block text-sm font-bold text-gray-400">
-                          {order.completed_at 
+                          {order.completed_at
                             ? new Date(order.completed_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
                             : new Date(order.delivery_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                         </span>
@@ -627,37 +627,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       </div>
                     </div>
                   ))}
-                  
-                  {orders.filter(o => o.status === 'completed').length === 0 && (
-                    <div className="col-span-full py-8 text-center text-gray-400 text-sm italic">
-                      Chưa có đơn hàng nào đã giao.
-                    </div>
-                  )}
+
+                {orders.filter(o => o.status === 'completed').length === 0 && (
+                  <div className="col-span-full py-8 text-center text-gray-400 text-sm italic">
+                    Chưa có đơn hàng nào đã giao.
+                  </div>
+                )}
               </div>
             </div>
           )}
-                        <span className="material-symbols-outlined text-2xl">check</span>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-600 line-clamp-1 decoration-gray-400">{order.customer_name}</h4>
-                        <p className="text-xs text-gray-400 line-clamp-1">{order.product_name}</p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="block text-xs font-bold text-gray-400">{order.completed_at ? 'Giao lúc' : 'Giờ hẹn'}</span>
-                      <span className="text-sm font-bold text-green-600">
-                        {new Date(order.completed_at || order.delivery_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  </div >
-                ))}
-{
-  orders.filter(o => o.status === 'completed').length === 0 && (
-    <p className="text-xs text-gray-400 italic">Chưa có đơn đã giao.</p>
-  )
-}
-            </div >
-          </div >
+
+        </div >
+    </div >
         </div >
       </section >
 
