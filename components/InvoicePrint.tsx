@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { SHOP_INFO, BANK_INFO } from '../constants';
 
 interface InvoicePrintProps {
     order: {
@@ -25,9 +26,9 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({ order }) => {
         <div className="hidden print:block fixed top-0 left-0 w-full h-auto bg-white z-[9999] p-2 text-black font-mono text-sm leading-tight">
             {/* Store Header */}
             <div className="text-center mb-4 border-b border-black pb-2 border-dashed">
-                <h1 className="text-xl font-bold uppercase mb-1">Bakery OS</h1>
-                <p className="text-xs">123 Đường Bánh Mì, Quận 1, TP.HCM</p>
-                <p className="text-xs">Hotline: 0909 123 456</p>
+                <h1 className="text-xl font-bold uppercase mb-1">{SHOP_INFO.name}</h1>
+                <p className="text-xs">{SHOP_INFO.address}</p>
+                <p className="text-xs">Hotline: {SHOP_INFO.phone}</p>
             </div>
 
             {/* Invoice Details */}
@@ -89,6 +90,18 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({ order }) => {
                 <div className="flex justify-between text-xs mt-1 italic text-right">
                     <span>({order.payment_method === 'debt' ? 'Ghi nợ' : 'Tiền mặt'})</span>
                 </div>
+            </div>
+
+            {/* QR Code Section */}
+            <div className="flex flex-col items-center mb-4">
+                <p className="text-[10px] uppercase font-bold mb-1">Quét mã để thanh toán</p>
+                <img
+                    src={`https://img.vietqr.io/image/${BANK_INFO.bankId}-${BANK_INFO.accountNo}-${BANK_INFO.template}.png?amount=${order.total_amount}&addInfo=${order.id.slice(0, 15)}&accountName=${encodeURIComponent(BANK_INFO.accountName)}`}
+                    alt="VietQR"
+                    className="w-32 h-32 object-contain"
+                />
+                <p className="text-[10px] mt-1">{BANK_INFO.bankId} - {BANK_INFO.accountNo}</p>
+                <p className="text-[10px] font-bold">{BANK_INFO.accountName}</p>
             </div>
 
             {/* Footer */}

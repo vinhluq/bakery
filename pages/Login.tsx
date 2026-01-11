@@ -11,6 +11,33 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [view, setView] = useState<'login' | 'register'>('login');
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user && data.session) {
+        onLogin(); // Auto login if session returned
+      } else {
+        setError('Đăng ký thành công! Vui lòng kiểm tra email xác nhận.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Đăng ký thất bại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -65,15 +92,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         {/* Auth Tabs */}
         <div className="flex p-1 mb-8 bg-gray-100 rounded-xl">
-          <button className="flex-1 py-2.5 text-sm font-semibold rounded-lg bg-white text-primary shadow-sm">
+          <button
+            onClick={() => setView('login')}
+            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${view === 'login' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
             Đăng nhập
           </button>
-          <button className="flex-1 py-2.5 text-sm font-medium text-gray-500 cursor-not-allowed opacity-50">
+          <button
+            onClick={() => setView('register')}
+            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${view === 'register' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
             Đăng ký
           </button>
         </div>
 
-        <form className="space-y-5" onSubmit={handleLogin}>
+        <form className="space-y-5" onSubmit={view === 'login' ? handleLogin : handleRegister}>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold ml-1 text-gray-700">Email</label>
             <div className="relative">
@@ -105,9 +138,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <span className="material-symbols-outlined text-[20px]">visibility</span>
               </button>
             </div>
-            <div className="flex justify-end">
-              <button type="button" className="text-sm font-semibold text-primary">Quên mật khẩu?</button>
-            </div>
+            {view === 'login' && (
+              <div className="flex justify-end">
+                <button type="button" className="text-sm font-semibold text-primary">Quên mật khẩu?</button>
+              </div>
+            )}
           </div>
 
           <button
@@ -115,7 +150,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             disabled={loading}
             className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {loading ? 'Đang xử lý...' : 'Đăng nhập'}
+            {loading ? 'Đang xử lý...' : (view === 'login' ? 'Đăng nhập' : 'Đăng ký ngay')}
             {!loading && <span className="material-symbols-outlined text-[20px]">arrow_forward</span>}
           </button>
         </form>

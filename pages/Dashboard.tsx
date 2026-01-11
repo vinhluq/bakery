@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppScreen, CakeOrder, Product, UserProfile } from '../types';
 import { supabase } from '../lib/supabase';
+import { SHOP_INFO } from '../constants';
 
 interface DashboardProps {
   onNavigate: (screen: AppScreen) => void;
@@ -174,8 +175,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h1 className="text-lg font-bold leading-tight">BINH MINH BAKERY</h1>
-            <p className="text-xs text-text-sub font-medium">608 Phan Chu Trinh - Phường Hương Trà - Đà Nẵng</p>
+            <h1 className="text-lg font-bold leading-tight">{SHOP_INFO.name}</h1>
+            <p className="text-xs text-text-sub font-medium">{SHOP_INFO.address}</p>
           </div>
         </div>
         <button className="relative p-2 rounded-full bg-white shadow-sm">

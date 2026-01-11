@@ -1,6 +1,20 @@
 
 import { Product, Shift, CustomerDebt } from './types';
 
+export const SHOP_INFO = {
+  name: 'BINH MINH BAKERY',
+  address: '608 Phan Chu Trinh, Phường Hương Trà, Đà Nẵng',
+  phone: '02353851573 - 0905422504',
+  logo_url: '/logo.png'
+};
+
+export const BANK_INFO = {
+  bankId: 'BIDV', // NH Đầu tư & Phát triển
+  accountNo: '56210000599780', // Example account number
+  accountName: 'LUONG THI THANH TAN',
+  template: 'compact' // 'compact', 'compact2', 'qr_only', 'print'
+};
+
 export const MOCK_PRODUCTS: Product[] = [
   {
     id: 'SP001',
