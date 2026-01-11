@@ -17,13 +17,18 @@ interface InvoicePrintProps {
             price: number;
         }[];
     } | null;
+    mode?: 'print' | 'preview';
 }
 
-const InvoicePrint: React.FC<InvoicePrintProps> = ({ order }) => {
+const InvoicePrint: React.FC<InvoicePrintProps> = ({ order, mode = 'print' }) => {
     if (!order) return null;
 
+    const containerClasses = mode === 'print'
+        ? "hidden print:block fixed top-0 left-0 w-full h-auto bg-white z-[9999] p-2 text-black font-mono text-sm leading-tight"
+        : "w-[80mm] h-auto bg-white p-4 text-black font-mono text-sm leading-tight mx-auto shadow-md"; // Preview style
+
     return (
-        <div className="hidden print:block fixed top-0 left-0 w-full h-auto bg-white z-[9999] p-2 text-black font-mono text-sm leading-tight">
+        <div className={containerClasses}>
             {/* Store Header */}
             <div className="text-center mb-4 border-b border-black pb-2 border-dashed">
                 <h1 className="text-xl font-bold uppercase mb-1">{SHOP_INFO.name}</h1>

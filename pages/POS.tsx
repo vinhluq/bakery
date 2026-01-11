@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Product, CartItem, CustomerDebt } from '../types';
 import InvoicePrint from '../components/InvoicePrint';
+import InvoicePreviewModal from '../components/InvoicePreviewModal';
+import { BANK_INFO } from '../constants';
 
 
 const POS: React.FC = () => {
@@ -27,6 +29,7 @@ const POS: React.FC = () => {
   const [discount, setDiscount] = useState<number>(0); // Percentage or fixed? User said "chiết khấu (mặc định 0%)", usually percent in simple POS or amount. Let's assume % based on "(mặc định 0%)". Wait, could be amount. But 0% implies percent. I will assume percent.
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [lastOrder, setLastOrder] = useState<any>(null); // For printing
 
 
@@ -157,7 +160,7 @@ const POS: React.FC = () => {
     setShowPaymentModal(true);
   };
 
-  const processPayment = async (method: 'cash' | 'debt') => {
+  const processPayment = async (method: 'cash' | 'debt' | 'transfer') => {
     try {
       // 1. If Debt, update customer balance
       if (method === 'debt' && selectedCustomer) {
@@ -230,24 +233,15 @@ const POS: React.FC = () => {
 
         // Success handling
         setShowPaymentModal(false);
-        setShowSuccessPopup(true);
+        // setShowSuccessPopup(true); // Removed popup to show preview instead
+        setShowPrintPreview(true); // Show Preview Modal
 
-        // Trigger Print immediately
-        setTimeout(() => {
-          window.print();
-        }, 300); // Small delay to allow React to render print view
-
-        // Auto close popup and reset
-        setTimeout(() => {
-          setShowSuccessPopup(false);
-          // Only clear cart after print dialogue might have been closed or started. 
-          // Actually clearing cart immediately is fine as lastOrder is separate.
-          setCart([]);
-          setDiscount(0);
-          if (priceMode === 'wholesale') {
-            setSelectedCustomer(null);
-          }
-        }, 1000);
+        // Cleanup after print/close is handled by the Modal
+        setCart([]);
+        setDiscount(0);
+        if (priceMode === 'wholesale') {
+          setSelectedCustomer(null);
+        }
       }
     } catch (error: any) {
       alert('Lỗi thanh toán: ' + error.message);
@@ -630,7 +624,7 @@ const POS: React.FC = () => {
                 </div>
 
                 {/* Payment Buttons */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     onClick={() => processPayment('cash')}
                     className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-green-500 text-white hover:bg-green-600 active:scale-95 transition-all shadow-lg shadow-green-500/20"
@@ -638,6 +632,16 @@ const POS: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined">payments</span>
                       <span className="font-bold">Tiền mặt</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => processPayment('transfer')}
+                    className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600 active:scale-95 transition-all shadow-lg shadow-blue-500/20"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined">qr_code</span>
+                      <span className="font-bold">Chuyển khoản</span>
                     </div>
                   </button>
 
@@ -668,19 +672,50 @@ const POS: React.FC = () => {
         {/* Success Popup */}
         {showSuccessPopup && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
-            <div className="bg-black/80 backdrop-blur-md text-white px-8 py-6 rounded-3xl shadow-2xl flex flex-col items-center animate-scale-up">
+            <div className="bg-black/80 backdrop-blur-md text-white px-8 py-6 rounded-3xl shadow-2xl flex flex-col items-center animate-scale-up pointer-events-auto">
               <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-3 shadow-lg shadow-green-500/30">
                 <span className="material-symbols-outlined text-3xl">check</span>
               </div>
-              <h3 className="font-bold text-xl">Thanh toán thành công!</h3>
+              <h3 className="font-bold text-xl mb-2">Thanh toán thành công!</h3>
+
+              {/* On-screen QR for quick scan */}
+              {lastOrder && lastOrder.payment_method === 'transfer' && (
+                <div className="bg-white p-2 rounded-xl mb-3">
+                  <img
+                    src={`https://img.vietqr.io/image/${BANK_INFO.bankId}-${BANK_INFO.accountNo}-${BANK_INFO.template}.png?amount=${lastOrder.total_amount}&addInfo=${lastOrder.id.slice(0, 15)}&accountName=${encodeURIComponent(BANK_INFO.accountName)}`}
+                    className="w-48 h-48 object-contain"
+                    alt="VietQR"
+                  />
+                </div>
+              )}
+
               <p className="text-white/80 text-sm mt-1">Đang in hóa đơn...</p>
+              <button
+                onClick={() => setShowSuccessPopup(false)}
+                className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-bold transition-colors"
+              >
+                Đóng
+              </button>
             </div>
           </div>
         )}
 
       </div>
-      {/* Hidden Print Component */}
-      <InvoicePrint order={lastOrder} />
+      {/* Hidden Print Component (Strictly for printing) */}
+      <InvoicePrint order={lastOrder} mode="print" />
+
+      {/* Invoice Preview Modal */}
+      {showPrintPreview && (
+        <InvoicePreviewModal
+          order={lastOrder}
+          onClose={() => setShowPrintPreview(false)}
+          onPrint={() => {
+            // Trigger print and then close? Or keep open? User said "Print and Exit buttons".
+            // Usually Print -> Dialog -> Done. User might want to Exit manually.
+            window.print();
+          }}
+        />
+      )}
     </>
   );
 };

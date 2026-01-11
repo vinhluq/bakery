@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { SHOP_INFO } from '../constants';
 
 interface LoginProps {
   onLogin: () => void;
@@ -71,7 +72,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         ></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         <div className="absolute bottom-6 left-6 text-white">
-          <h2 className="text-3xl font-bold tracking-tight">BINH MINH BAKERY</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{SHOP_INFO.name}</h2>
           <p className="text-sm font-medium opacity-90">Quản lý Lò Bánh</p>
         </div>
       </div>
