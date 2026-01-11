@@ -43,12 +43,75 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     note: ''
   });
 
+  // Revenue State
+  const [revenueStats, setRevenueStats] = useState({
+    total: 0,
+    cash: 0,
+    transfer: 0,
+    count: 0
+  });
+  const [openingBalance, setOpeningBalance] = useState<number>(0);
+  const [showMoneyModal, setShowMoneyModal] = useState(false);
+  const [tempOpeningBalance, setTempOpeningBalance] = useState('');
+
+  useEffect(() => {
+    // Load opening balance from local storage
+    const saved = localStorage.getItem('openingBalance');
+    if (saved) {
+      const { date, amount } = JSON.parse(saved);
+      // Reset if different day (optional, but good practice for daily register)
+      if (new Date(date).toDateString() === new Date().toDateString()) {
+        setOpeningBalance(amount);
+      } else {
+        localStorage.removeItem('openingBalance');
+      }
+    }
+  }, []);
+
   useEffect(() => {
     fetchOrders();
+    fetchRevenue(); // Fetch POS revenue
     fetchProducts();
     fetchProfiles();
     fetchCurrentUser();
   }, []);
+
+  const fetchRevenue = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const { data: orders } = await supabase
+      .from('orders') // Real POS orders
+      .select('total_amount, payment_method')
+      .gte('created_at', today.toISOString())
+      .lt('created_at', tomorrow.toISOString());
+
+    if (orders) {
+      const stats = orders.reduce((acc, order) => {
+        acc.total += order.total_amount || 0;
+        acc.count += 1;
+        if (order.payment_method === 'cash') {
+          acc.cash += order.total_amount || 0;
+        } else if (order.payment_method === 'transfer') {
+          acc.transfer += order.total_amount || 0;
+        }
+        return acc;
+      }, { total: 0, cash: 0, transfer: 0, count: 0 });
+      setRevenueStats(stats);
+    }
+  };
+
+  const handleSaveOpeningBalance = () => {
+    const amount = parseInt(tempOpeningBalance.replace(/\D/g, ''), 10) || 0;
+    setOpeningBalance(amount);
+    localStorage.setItem('openingBalance', JSON.stringify({
+      date: new Date().toISOString(),
+      amount: amount
+    }));
+    setShowMoneyModal(false);
+  };
 
   useEffect(() => {
     if (currentUser) {
@@ -201,20 +264,64 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       {currentUser?.role !== 'baker' && (
         <div className="bg-gradient-to-br from-primary to-primary-dark rounded-3xl p-6 text-white shadow-xl shadow-primary/20 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center gap-2 text-white/80">
-              <span className="material-symbols-outlined text-lg">payments</span>
-              <span className="text-xs font-semibold">Doanh thu hôm nay</span>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+            {/* Left: Total Revenue */}
+            <div>
+              <div className="flex items-center gap-2 text-white/80 mb-2">
+                <span className="material-symbols-outlined text-lg">payments</span>
+                <span className="text-xs font-semibold uppercase tracking-wider">Tổng doanh thu hôm nay</span>
+              </div>
+              <div className="text-3xl font-bold mb-4 tracking-tight">
+                {revenueStats.total.toLocaleString()}đ
+              </div>
+
+              {/* Breakdown */}
+              <div className="flex gap-4 text-xs">
+                <div className="bg-white/10 px-3 py-2 rounded-xl backdrop-blur-sm">
+                  <p className="opacity-70 mb-1">Tiền mặt</p>
+                  <p className="font-bold">{revenueStats.cash.toLocaleString()}đ</p>
+                </div>
+                <div className="bg-white/10 px-3 py-2 rounded-xl backdrop-blur-sm">
+                  <p className="opacity-70 mb-1">Chuyển khoản</p>
+                  <p className="font-bold">{revenueStats.transfer.toLocaleString()}đ</p>
+                </div>
+              </div>
             </div>
-            <span className="px-2 py-1 bg-white/20 rounded-lg text-[10px] font-bold backdrop-blur-sm flex items-center">
-              <span className="material-symbols-outlined text-[12px] mr-1">trending_up</span> +12%
-            </span>
-          </div>
-          <div className="text-3xl font-bold mb-4 tracking-tight">15.500.000đ</div>
-          <div>
-            <p className="text-[10px] font-medium text-white/70 mb-1.5 uppercase tracking-wider">Mục tiêu: 12.000.000đ</p>
-            <div className="w-full bg-black/10 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-white h-full w-full rounded-full"></div>
+
+            {/* Right: Cash in Drawer */}
+            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-yellow-300">point_of_sale</span>
+                  <span className="font-bold">Tiền trong két</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setTempOpeningBalance(openingBalance.toString());
+                    setShowMoneyModal(true);
+                  }}
+                  className="bg-white/20 hover:bg-white/30 p-1.5 rounded-lg transition-colors text-xs font-bold"
+                >
+                  Nhập tiền lẻ
+                </button>
+              </div>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-white/70">
+                  <span>Trả tiền mặt:</span>
+                  <span>{revenueStats.cash.toLocaleString()}đ</span>
+                </div>
+                <div className="flex justify-between text-white/70">
+                  <span>Tiền đầu ca:</span>
+                  <span>{openingBalance.toLocaleString()}đ</span>
+                </div>
+                <div className="h-px bg-white/20 my-2"></div>
+                <div className="flex justify-between font-bold text-lg text-yellow-300">
+                  <span>Tiền hiện có:</span>
+                  <span>{(revenueStats.cash + openingBalance).toLocaleString()}đ</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -738,6 +845,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 active:scale-95 transition-transform"
               >
                 Tạo đơn hàng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showMoneyModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-xs rounded-2xl shadow-xl p-6 animate-scale-up">
+            <h3 className="font-bold text-lg text-center mb-4">Nhập tiền đầu ca (Tiền lẻ)</h3>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={tempOpeningBalance}
+              onChange={(e) => setTempOpeningBalance(e.target.value)}
+              className="w-full text-center text-2xl font-bold p-3 bg-gray-50 rounded-xl mb-6 focus:ring-2 ring-primary outline-none"
+              placeholder="0"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowMoneyModal(false)}
+                className="py-3 rounded-xl bg-gray-100 font-bold text-gray-600"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSaveOpeningBalance}
+                className="py-3 rounded-xl bg-primary text-white font-bold"
+              >
+                Xác nhận
               </button>
             </div>
           </div>

@@ -32,7 +32,7 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({ order, mode = 'print' }) =>
             {/* Store Header */}
             <div className="text-center mb-4 border-b border-black pb-2 border-dashed">
                 <h1 className="text-xl font-bold uppercase mb-1">{SHOP_INFO.name}</h1>
-                <p className="text-xs">{SHOP_INFO.address}</p>
+                <p className="text-xs whitespace-nowrap overflow-hidden text-ellipsis">{SHOP_INFO.address}</p>
                 <p className="text-xs">Hotline: {SHOP_INFO.phone}</p>
             </div>
 
