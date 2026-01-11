@@ -15,6 +15,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [orders, setOrders] = useState<CakeOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<CakeOrder | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAllOrders, setShowAllOrders] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
   // Form Data
@@ -420,13 +421,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="material-symbols-outlined text-[16px]">add</span>
               Tạo đơn
             </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-lg shadow-sm hover:bg-primary-dark transition-colors flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              Tạo đơn
-            </button>
+
             <button
               onClick={() => setShowAllOrders(!showAllOrders)}
               className="text-xs font-bold text-primary"
@@ -638,7 +633,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           )}
 
 
-      </section >
+        </div>
+      </section>
 
       {/* Order Detail Modal */}
       {
