@@ -3,7 +3,7 @@ import { Product, Shift, CustomerDebt } from './types';
 
 export const SHOP_INFO = {
   name: 'BINH MINH BAKERY',
-  address: '608 Phan Chu Trinh, Phường Hương Trà, Đà Nẵng',
+  address: '608 Phan Chu Trinh, P. Hương Trà, Đà Nẵng',
   phone: '02353851573 - 0905422504',
   logo_url: '/logo.png'
 };

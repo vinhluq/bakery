@@ -38,10 +38,12 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({ order, mode = 'print' }) =>
 
             {/* Invoice Details */}
             <div className="mb-4 text-xs">
+                {/* 
                 <div className="flex justify-between">
                     <span>HĐ:</span>
                     <span>#{order.id.slice(0, 8)}</span>
                 </div>
+                 */}
                 <div className="flex justify-between">
                     <span>Ngày:</span>
                     <span>{new Date(order.created_at).toLocaleString('vi-VN')}</span>
@@ -103,16 +105,15 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({ order, mode = 'print' }) =>
                 <img
                     src={`https://img.vietqr.io/image/${BANK_INFO.bankId}-${BANK_INFO.accountNo}-${BANK_INFO.template}.png?amount=${order.total_amount}&addInfo=${order.id.slice(0, 15)}&accountName=${encodeURIComponent(BANK_INFO.accountName)}`}
                     alt="VietQR"
-                    className="w-32 h-32 object-contain"
+                    className="w-48 h-48 object-contain"
                 />
                 <p className="text-[10px] mt-1">{BANK_INFO.bankId} - {BANK_INFO.accountNo}</p>
                 <p className="text-[10px] font-bold">{BANK_INFO.accountName}</p>
             </div>
 
             {/* Footer */}
-            <div className="text-center text-xs mt-4">
-                <p>Cảm ơn quý khách!</p>
-                <p>Hẹn gặp lại</p>
+            <div className="text-center text-xs mt-4 font-bold border-t border-black border-dashed pt-2">
+                <p>Cảm ơn quý khách và Hẹn gặp lại!</p>
             </div>
         </div>
     );
