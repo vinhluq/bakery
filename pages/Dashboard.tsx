@@ -420,7 +420,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="material-symbols-outlined text-[16px]">add</span>
               Tạo đơn
             </button>
-            <button className="text-xs font-bold text-primary">Xem tất cả</button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-lg shadow-sm hover:bg-primary-dark transition-colors flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              Tạo đơn
+            </button>
+            <button 
+              onClick={() => setShowAllOrders(!showAllOrders)}
+              className="text-xs font-bold text-primary"
+            >
+              {showAllOrders ? 'Thu gọn' : 'Xem tất cả'}
+            </button>
           </div>
         </div>
 
@@ -569,35 +581,61 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </div>
             )}
 
-          {/* Section: Đã giao (History) */}
-          <div>
-            <div className="flex items-center gap-2 mb-3 cursor-pointer group" onClick={() => {
-              // Toggle history visibility if needed, or just show header
-            }}>
-              <h4 className="text-sm font-bold text-green-600 flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg">check_circle</span>
-                Đã giao (Lịch sử)
-              </h4>
-              <div className="h-px bg-gray-100 flex-1"></div>
-            </div>
+          {/* Section: Đã giao (History) - Only show if showAllOrders is true */}
+          {showAllOrders && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <h4 className="text-sm font-bold text-green-600 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-lg">check_circle</span>
+                  Đã giao (Lịch sử)
+                </h4>
+                <div className="h-px bg-gray-100 flex-1"></div>
+              </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-75 hover:opacity-100 transition-opacity">
-              {orders
-                .filter(o => o.status === 'completed')
-                .sort((a, b) => {
-                  const timeA = new Date(a.completed_at || a.delivery_date).getTime();
-                  const timeB = new Date(b.completed_at || b.delivery_date).getTime();
-                  return timeB - timeA;
-                })
-                .slice(0, 5) // Limit to last 5 for cleanliness
-                .map(order => (
-                  <div
-                    key={order.id}
-                    onClick={() => setSelectedOrder(order)}
-                    className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between active:scale-95 transition-transform cursor-pointer hover:bg-white"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex flex-col items-center justify-center border border-green-100 grayscale-[0.5]">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-75 hover:opacity-100 transition-opacity">
+                {orders
+                  .filter(o => o.status === 'completed')
+                  .sort((a, b) => {
+                    const timeA = new Date(a.completed_at || a.delivery_date).getTime();
+                    const timeB = new Date(b.completed_at || b.delivery_date).getTime();
+                    return timeB - timeA;
+                  })
+                  .slice(0, 10) // Show last 10
+                  .map(order => (
+                    <div
+                      key={order.id}
+                      onClick={() => setSelectedOrder(order)}
+                      className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between active:scale-95 transition-transform cursor-pointer hover:bg-white"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex flex-col items-center justify-center border border-green-100 grayscale-[0.5]">
+                          <span className="text-xs font-bold uppercase">{new Date(order.delivery_date).toLocaleDateString('vi-VN', { weekday: 'short' })}</span>
+                          <span className="text-lg font-bold leading-none">{new Date(order.delivery_date).getDate()}</span>
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-900 line-clamp-1">{order.customer_name}</h4>
+                          <p className="text-xs text-gray-500 line-clamp-1">{order.product_name} - x{order.quantity}</p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="block text-sm font-bold text-gray-400">
+                          {order.completed_at 
+                            ? new Date(order.completed_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                            : new Date(order.delivery_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-md font-bold">Đã giao</span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {orders.filter(o => o.status === 'completed').length === 0 && (
+                    <div className="col-span-full py-8 text-center text-gray-400 text-sm italic">
+                      Chưa có đơn hàng nào đã giao.
+                    </div>
+                  )}
+              </div>
+            </div>
+          )}
                         <span className="material-symbols-outlined text-2xl">check</span>
                       </div>
                       <div>
@@ -611,282 +649,290 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         {new Date(order.completed_at || order.delivery_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                  </div>
+                  </div >
                 ))}
-              {orders.filter(o => o.status === 'completed').length === 0 && (
-                <p className="text-xs text-gray-400 italic">Chưa có đơn đã giao.</p>
-              )}
+{
+  orders.filter(o => o.status === 'completed').length === 0 && (
+    <p className="text-xs text-gray-400 italic">Chưa có đơn đã giao.</p>
+  )
+}
+            </div >
+          </div >
+        </div >
+      </section >
+
+  {/* Order Detail Modal */ }
+{
+  selectedOrder && (
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 pb-32 animate-fade-in">
+      <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up">
+        <div className="p-4 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
+          <h3 className="font-bold text-lg text-purple-900">Chi tiết đơn đặt</h3>
+          <button
+            onClick={() => setSelectedOrder(null)}
+            className="w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center shadow-sm"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-16 h-16 rounded-full bg-gray-100 overflow-hidden">
+              <img src="https://ui-avatars.com/api/?name=KH&background=random" alt="" className="w-full h-full object-cover" />
+            </div>
+            <div>
+              <h4 className="text-xl font-bold">{selectedOrder.customer_name}</h4>
+              <p className="text-sm text-gray-500">{selectedOrder.phone || 'Không có sđt'}</p>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Order Detail Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 pb-32 animate-fade-in">
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up">
-            <div className="p-4 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
-              <h3 className="font-bold text-lg text-purple-900">Chi tiết đơn đặt</h3>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="w-8 h-8 rounded-full bg-white text-gray-500 flex items-center justify-center shadow-sm"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
+          <div className="bg-gray-50 p-4 rounded-xl space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-500 text-sm">Loại bánh</span>
+              <span className="font-bold text-sm text-right">{selectedOrder.product_name}</span>
             </div>
-
-            <div className="p-6 space-y-4">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 rounded-full bg-gray-100 overflow-hidden">
-                  <img src="https://ui-avatars.com/api/?name=KH&background=random" alt="" className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold">{selectedOrder.customer_name}</h4>
-                  <p className="text-sm text-gray-500">{selectedOrder.phone || 'Không có sđt'}</p>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-xl space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Loại bánh</span>
-                  <span className="font-bold text-sm text-right">{selectedOrder.product_name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Số lượng</span>
-                  <span className="font-bold text-sm">x{selectedOrder.quantity}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Địa chỉ</span>
-                  <span className="font-medium text-sm text-right">{selectedOrder.delivery_address || 'Tại cửa hàng'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Thành tiền</span>
-                  <span className="font-bold text-sm text-primary">{selectedOrder.total_amount.toLocaleString()}đ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Cọc trước</span>
-                  <span className="font-bold text-sm">{selectedOrder.deposit_amount.toLocaleString()}đ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Còn lại</span>
-                  <span className="font-bold text-sm text-red-500">{selectedOrder.remaining_amount.toLocaleString()}đ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Ghi chú</span>
-                  <span className="font-medium text-sm text-right italic">"{selectedOrder.note || 'Không có ghi chú'}"</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl text-blue-700">
-                <span className="material-symbols-outlined text-2xl">schedule</span>
-                <div>
-                  <p className="text-xs font-bold opacity-70">Thời gian giao hàng</p>
-                  <p className="font-bold text-lg">
-                    {new Date(selectedOrder.delivery_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                    <span className="text-sm font-normal text-blue-600 ml-1">
-                      - {new Date(selectedOrder.delivery_date).toLocaleDateString('vi-VN')}
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={handleMarkAsDelivered}
-                className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg shadow-purple-200 mt-2 hover:bg-purple-700 transition-colors"
-              >
-                Đánh dấu đã giao
-              </button>
+            <div className="flex justify-between">
+              <span className="text-gray-500 text-sm">Số lượng</span>
+              <span className="font-bold text-sm">x{selectedOrder.quantity}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500 text-sm">Địa chỉ</span>
+              <span className="font-medium text-sm text-right">{selectedOrder.delivery_address || 'Tại cửa hàng'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500 text-sm">Thành tiền</span>
+              <span className="font-bold text-sm text-primary">{selectedOrder.total_amount.toLocaleString()}đ</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500 text-sm">Cọc trước</span>
+              <span className="font-bold text-sm">{selectedOrder.deposit_amount.toLocaleString()}đ</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500 text-sm">Còn lại</span>
+              <span className="font-bold text-sm text-red-500">{selectedOrder.remaining_amount.toLocaleString()}đ</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500 text-sm">Ghi chú</span>
+              <span className="font-medium text-sm text-right italic">"{selectedOrder.note || 'Không có ghi chú'}"</span>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Create Order Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 pb-32 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
-            <div className="p-4 bg-primary text-white flex items-center justify-between sticky top-0 z-10">
-              <h3 className="font-bold text-lg">Tạo đơn đặt bánh</h3>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-colors"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 overflow-y-auto">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Tên Khách hàng <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
-                  placeholder="Nhập tên khách hàng"
-                  value={formData.customer_name}
-                  onChange={e => setFormData({ ...formData, customer_name: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Số điện thoại</label>
-                <input
-                  type="tel"
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
-                  placeholder="Nhập số điện thoại"
-                  value={formData.phone}
-                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Loại Bánh <span className="text-red-500">*</span></label>
-                  <select
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
-                    value={formData.product_id}
-                    onChange={e => {
-                      const product = products.find(p => p.id === e.target.value);
-                      setFormData({
-                        ...formData,
-                        product_id: e.target.value,
-                        product_name: product ? product.name : ''
-                      });
-                    }}
-                  >
-                    <option value="">Chọn loại bánh</option>
-                    {products.map(p => (
-                      <option key={p.id} value={p.id}>{p.name} - {p.price.toLocaleString()}đ</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Số lượng</label>
-                  <input
-                    type="number"
-                    min="1"
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50 font-bold"
-                    value={formData.quantity}
-                    onChange={e => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Thành tiền</label>
-                  <div className="w-full px-4 py-2 rounded-xl bg-gray-100 border border-gray-200 font-bold text-primary flex items-center justify-end">
-                    {totalAmount.toLocaleString()}đ
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Cọc trước</label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
-                    value={formData.deposit_amount}
-                    onChange={e => setFormData({ ...formData, deposit_amount: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Còn lại</label>
-                  <div className="w-full px-4 py-2 rounded-xl bg-gray-100 border border-gray-200 font-bold text-red-500 flex items-center justify-end">
-                    {remainingAmount.toLocaleString()}đ
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Ngày nhận <span className="text-red-500">*</span></label>
-                <input
-                  type="datetime-local"
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
-                  value={formData.delivery_date}
-                  onChange={e => setFormData({ ...formData, delivery_date: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Địa chỉ nhận hàng</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
-                  placeholder="Nhập địa chỉ giao hàng"
-                  value={formData.delivery_address}
-                  onChange={e => setFormData({ ...formData, delivery_address: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Người tạo đơn</label>
-                <select
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
-                  value={formData.created_by}
-                  onChange={e => setFormData({ ...formData, created_by: e.target.value })}
-                >
-                  <option value="">Chọn nhân viên</option>
-                  {profiles.map(p => (
-                    <option key={p.id} value={p.full_name}>{p.full_name}</option>
-                  ))}
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Ghi chú</label>
-                <textarea
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
-                  rows={2}
-                  value={formData.note}
-                  onChange={e => setFormData({ ...formData, note: e.target.value })}
-                ></textarea>
-              </div>
-
-            </div>
-
-            <div className="p-4 border-t border-gray-100 bg-gray-50 sticky bottom-0 z-10">
-              <button
-                onClick={handleCreateOrder}
-                className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 active:scale-95 transition-transform"
-              >
-                Tạo đơn hàng
-              </button>
+          <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl text-blue-700">
+            <span className="material-symbols-outlined text-2xl">schedule</span>
+            <div>
+              <p className="text-xs font-bold opacity-70">Thời gian giao hàng</p>
+              <p className="font-bold text-lg">
+                {new Date(selectedOrder.delivery_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                <span className="text-sm font-normal text-blue-600 ml-1">
+                  - {new Date(selectedOrder.delivery_date).toLocaleDateString('vi-VN')}
+                </span>
+              </p>
             </div>
           </div>
+
+          <button
+            onClick={handleMarkAsDelivered}
+            className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg shadow-purple-200 mt-2 hover:bg-purple-700 transition-colors"
+          >
+            Đánh dấu đã giao
+          </button>
         </div>
-      )}
-      {showMoneyModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-xs rounded-2xl shadow-xl p-6 animate-scale-up">
-            <h3 className="font-bold text-lg text-center mb-4">Nhập tiền đầu ca (Tiền lẻ)</h3>
+      </div>
+    </div>
+  )
+}
+
+{/* Create Order Modal */ }
+{
+  showCreateModal && (
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 pb-32 animate-fade-in">
+      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
+        <div className="p-4 bg-primary text-white flex items-center justify-between sticky top-0 z-10">
+          <h3 className="font-bold text-lg">Tạo đơn đặt bánh</h3>
+          <button
+            onClick={() => setShowCreateModal(false)}
+            className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-colors"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4 overflow-y-auto">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Tên Khách hàng <span className="text-red-500">*</span></label>
             <input
               type="text"
-              inputMode="numeric"
-              value={tempOpeningBalance}
-              onChange={(e) => setTempOpeningBalance(e.target.value)}
-              className="w-full text-center text-2xl font-bold p-3 bg-gray-50 rounded-xl mb-6 focus:ring-2 ring-primary outline-none"
-              placeholder="0"
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
+              placeholder="Nhập tên khách hàng"
+              value={formData.customer_name}
+              onChange={e => setFormData({ ...formData, customer_name: e.target.value })}
             />
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setShowMoneyModal(false)}
-                className="py-3 rounded-xl bg-gray-100 font-bold text-gray-600"
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Số điện thoại</label>
+            <input
+              type="tel"
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
+              placeholder="Nhập số điện thoại"
+              value={formData.phone}
+              onChange={e => setFormData({ ...formData, phone: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-xs font-bold text-gray-700 mb-1">Loại Bánh <span className="text-red-500">*</span></label>
+              <select
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
+                value={formData.product_id}
+                onChange={e => {
+                  const product = products.find(p => p.id === e.target.value);
+                  setFormData({
+                    ...formData,
+                    product_id: e.target.value,
+                    product_name: product ? product.name : ''
+                  });
+                }}
               >
-                Hủy
-              </button>
-              <button
-                onClick={handleSaveOpeningBalance}
-                className="py-3 rounded-xl bg-primary text-white font-bold"
-              >
-                Xác nhận
-              </button>
+                <option value="">Chọn loại bánh</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} - {p.price.toLocaleString()}đ</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Số lượng</label>
+              <input
+                type="number"
+                min="1"
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50 font-bold"
+                value={formData.quantity}
+                onChange={e => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Thành tiền</label>
+              <div className="w-full px-4 py-2 rounded-xl bg-gray-100 border border-gray-200 font-bold text-primary flex items-center justify-end">
+                {totalAmount.toLocaleString()}đ
+              </div>
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Cọc trước</label>
+              <input
+                type="number"
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
+                value={formData.deposit_amount}
+                onChange={e => setFormData({ ...formData, deposit_amount: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Còn lại</label>
+              <div className="w-full px-4 py-2 rounded-xl bg-gray-100 border border-gray-200 font-bold text-red-500 flex items-center justify-end">
+                {remainingAmount.toLocaleString()}đ
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Ngày nhận <span className="text-red-500">*</span></label>
+            <input
+              type="datetime-local"
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
+              value={formData.delivery_date}
+              onChange={e => setFormData({ ...formData, delivery_date: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Địa chỉ nhận hàng</label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
+              placeholder="Nhập địa chỉ giao hàng"
+              value={formData.delivery_address}
+              onChange={e => setFormData({ ...formData, delivery_address: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Người tạo đơn</label>
+            <select
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
+              value={formData.created_by}
+              onChange={e => setFormData({ ...formData, created_by: e.target.value })}
+            >
+              <option value="">Chọn nhân viên</option>
+              {profiles.map(p => (
+                <option key={p.id} value={p.full_name}>{p.full_name}</option>
+              ))}
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Ghi chú</label>
+            <textarea
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
+              rows={2}
+              value={formData.note}
+              onChange={e => setFormData({ ...formData, note: e.target.value })}
+            ></textarea>
+          </div>
+
         </div>
-      )}
+
+        <div className="p-4 border-t border-gray-100 bg-gray-50 sticky bottom-0 z-10">
+          <button
+            onClick={handleCreateOrder}
+            className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+          >
+            Tạo đơn hàng
+          </button>
+        </div>
+      </div>
     </div>
+  )
+}
+{
+  showMoneyModal && (
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-white w-full max-w-xs rounded-2xl shadow-xl p-6 animate-scale-up">
+        <h3 className="font-bold text-lg text-center mb-4">Nhập tiền đầu ca (Tiền lẻ)</h3>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={tempOpeningBalance}
+          onChange={(e) => setTempOpeningBalance(e.target.value)}
+          className="w-full text-center text-2xl font-bold p-3 bg-gray-50 rounded-xl mb-6 focus:ring-2 ring-primary outline-none"
+          placeholder="0"
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowMoneyModal(false)}
+            className="py-3 rounded-xl bg-gray-100 font-bold text-gray-600"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={handleSaveOpeningBalance}
+            className="py-3 rounded-xl bg-primary text-white font-bold"
+          >
+            Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+    </div >
   );
 };
 
