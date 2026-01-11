@@ -50,6 +50,7 @@ const SortableUserItem: React.FC<{ user: UserProfile; onEdit: (u: UserProfile) =
 const Shifts: React.FC = () => {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employees, setEmployees] = useState<UserProfile[]>([]);
+  const [showAllShifts, setShowAllShifts] = useState(false);
 
   // Shift Modal State
   const [showModal, setShowModal] = useState(false);
@@ -433,50 +434,57 @@ const Shifts: React.FC = () => {
 
       <div className="px-4 pb-4 flex items-center justify-between">
         <h3 className="text-base font-bold">Ca làm việc hôm nay</h3>
-        <button className="text-primary text-xs font-bold">Xem tất cả</button>
+        <button
+          onClick={() => setShowAllShifts(!showAllShifts)}
+          className="text-primary text-xs font-bold"
+        >
+          {showAllShifts ? 'Thu gọn' : 'Xem tất cả'}
+        </button>
       </div>
 
       <div className="px-4 space-y-4 pb-24">
-        {shifts.map((shift) => (
-          <div
-            key={shift.id}
-            onClick={() => openModal(shift)}
-            className={`p-4 rounded-3xl border shadow-sm transition-all active:scale-[0.98] ${shift.status === 'active' ? 'border-primary bg-white' : 'border-gray-50 bg-white'}`}
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-3">
-                <img src={shift.image || 'https://via.placeholder.com/150'} className="w-14 h-14 rounded-full border-2 border-white shadow-md object-cover" alt="" />
+        {shifts
+          .filter(shift => showAllShifts || shift.status !== 'completed')
+          .map((shift) => (
+            <div
+              key={shift.id}
+              onClick={() => openModal(shift)}
+              className={`p-4 rounded-3xl border shadow-sm transition-all active:scale-[0.98] ${shift.status === 'active' ? 'border-primary bg-white' : 'border-gray-50 bg-white'}`}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <img src={shift.image || 'https://via.placeholder.com/150'} className="w-14 h-14 rounded-full border-2 border-white shadow-md object-cover" alt="" />
+                  <div>
+                    <h4 className="text-sm font-bold">{shift.name}</h4>
+                    <p className="text-xs text-text-sub font-medium">{shift.role}</p>
+                  </div>
+                </div>
+                <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${shift.status === 'active' ? 'bg-green-100 text-green-600' :
+                  shift.status === 'upcoming' ? 'bg-orange-100 text-orange-600' :
+                    'bg-gray-100 text-gray-500'
+                  }`}>
+                  {shift.status === 'active' ? 'Đang làm' : shift.status === 'upcoming' ? 'Sắp tới' : 'Đã xong'}
+                </span>
+              </div>
+              <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-bold">{shift.name}</h4>
-                  <p className="text-xs text-text-sub font-medium">{shift.role}</p>
+                  <p className="text-[10px] font-bold text-text-sub uppercase mb-1">{shift.time.includes('05:00') ? 'Ca Sáng' : shift.time.includes('12:00') ? 'Ca Chiều' : 'Ca Tối'}</p>
+                  <p className="text-lg font-bold font-mono text-gray-700">{shift.time}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteShift(shift.id); }}
+                    className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500"
+                  >
+                    <span className="material-symbols-outlined">delete</span>
+                  </button>
+                  <button className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-primary">
+                    <span className="material-symbols-outlined">edit</span>
+                  </button>
                 </div>
               </div>
-              <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${shift.status === 'active' ? 'bg-green-100 text-green-600' :
-                shift.status === 'upcoming' ? 'bg-orange-100 text-orange-600' :
-                  'bg-gray-100 text-gray-500'
-                }`}>
-                {shift.status === 'active' ? 'Đang làm' : shift.status === 'upcoming' ? 'Sắp tới' : 'Đã xong'}
-              </span>
             </div>
-            <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-bold text-text-sub uppercase mb-1">{shift.time.includes('05:00') ? 'Ca Sáng' : shift.time.includes('12:00') ? 'Ca Chiều' : 'Ca Tối'}</p>
-                <p className="text-lg font-bold font-mono text-gray-700">{shift.time}</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => { e.stopPropagation(); deleteShift(shift.id); }}
-                  className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500"
-                >
-                  <span className="material-symbols-outlined">delete</span>
-                </button>
-                <button className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined">edit</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+          ))}
       </div>
 
       {/* Existing Shift Modal */}
