@@ -113,4 +113,5 @@ export interface CakeOrder {
   status: 'pending' | 'completed' | 'canceled';
   note?: string;
   completed_at?: string;
+  customer_id?: string;
 }

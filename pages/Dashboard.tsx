@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppScreen, CakeOrder, Product, UserProfile } from '../types';
+import { AppScreen, CakeOrder, Product, UserProfile, CustomerDebt } from '../types';
 import { supabase } from '../lib/supabase';
 import { SHOP_INFO } from '../constants';
 
@@ -16,10 +16,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [selectedOrder, setSelectedOrder] = useState<CakeOrder | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAllOrders, setShowAllOrders] = useState(false);
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
   // Form Data
   const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<CustomerDebt[]>([]);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const getTodayAt5AM = () => {
     const date = new Date();
@@ -40,6 +42,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   const [formData, setFormData] = useState({
     customer_name: '',
+    customer_id: '',
     phone: '',
     product_id: '',
     product_name: '',
@@ -80,6 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     fetchOrders();
     fetchRevenue(); // Fetch POS revenue
     fetchProducts();
+    fetchCustomers();
     fetchProfiles();
     fetchCurrentUser();
   }, []);
@@ -141,6 +145,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     if (data) setProducts(data);
   };
 
+  const fetchCustomers = async () => {
+    const { data } = await supabase.from('customer_debts').select('*').order('name');
+    if (data) setCustomers(data);
+  };
+
   const fetchProfiles = async () => {
     // Assuming 'profiles' table exists and is accessible. 
     // If not, we might need to adjust or rely on a simple text input if permissions are strict.
@@ -174,6 +183,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { error } = await supabase.from('cake_orders').insert([
       {
         ...formData,
+        customer_id: formData.customer_id || null,
         delivery_date: deliveryDateISO,
         total_amount,
         status: 'pending'
@@ -188,6 +198,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       fetchOrders();
       setFormData({
         customer_name: '',
+        customer_id: '',
         phone: '',
         product_id: '',
         product_name: '',
@@ -201,36 +212,119 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleMarkAsDelivered = async () => {
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+
+  const handleMarkAsDelivered = () => {
+    if (!selectedOrder) return;
+    setShowDeliveryModal(true);
+  };
+
+  const confirmDelivery = async (method: 'cash' | 'transfer' | 'debt') => {
     if (!selectedOrder) return;
 
-    // Try to update with completed_at first
-    const { error } = await supabase
-      .from('cake_orders')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', selectedOrder.id);
+    try {
+      // 1. If Debt, update customer balance
+      if (method === 'debt') {
+        if (!selectedOrder.customer_id) return alert('Đơn hàng không gắn với khách hàng, không thể ghi nợ');
 
-    if (error) {
-      console.warn('Could not update completed_at, falling back to status only:', error.message);
+        // Fetch current debt to be safe
+        const { data: custData } = await supabase.from('customer_debts').select('amount').eq('id', selectedOrder.customer_id).single();
+        const currentDebt = custData?.amount || 0;
+        const newDebt = currentDebt + selectedOrder.remaining_amount; // Debt is remaining amount
 
-      // Fallback: Try updating ONLY status (in case column is missing)
-      const { error: fallbackError } = await supabase
+        const { error: debtError } = await supabase
+          .from('customer_debts')
+          .update({
+            amount: newDebt,
+            status: newDebt > 0 ? 'pending' : 'paid',
+            last_activity: new Date().toISOString()
+          })
+          .eq('id', selectedOrder.customer_id);
+
+        if (debtError) throw debtError;
+
+        // Log Transaction
+        await supabase.from('debt_transactions').insert([{
+          customer_id: selectedOrder.customer_id,
+          amount: selectedOrder.remaining_amount,
+          type: 'debt',
+          note: `Bánh đặt: ${selectedOrder.product_name}`,
+          created_at: new Date().toISOString()
+        }]);
+      }
+
+      // 2. Create Revenue Order (for Reports)
+      // Only if amount > 0. Cake order typically has some remaining amount to pay.
+      // If fully paid deposit, remaining is 0.
+      // We record the *sales transaction* for the remaining amount?
+      // OR the full amount?
+      // Revenue report usually counts *cash flow* or *completed sales*?
+      // Based on Dashboard `fetchRevenue`: sum of `total_amount` from `orders` table.
+      // So we should record the FULL amount as revenue, OR just the payment?
+      // Usually `orders` table tracks the invoice.
+      // If we record full amount, we duplicate the deposit? 
+      // Logic: Cake Order Deposit was likely taken earlier (maybe not recorded in system?).
+      // Let's assume we record the FINAL payment now. 
+      // BUT `orders` table has `total_amount`.
+      // If we want revenue to be correct for TODAY, we should record:
+      // Case A: Create Order record with `total_amount` = `remaining_amount`?
+      // Case B: Create Order record with `total_amount` = `order.total_amount`?
+      // If I create order with `total_amount`, revenue increases by full cake price.
+      // If deposit was paid days ago, we shouldn't count it today?
+      // Let's stick to recording `remaining_amount` as the transaction value for today?
+      // User asked: "khi đánh dấu đã giao sẽ có thu tiền mặt và chuyển khoản". (Collect cash/transfer).
+      // Implies collecting the remaining money.
+      // So I will insert an order with `total_amount` = `remaining_amount`.
+      // If remaining is 0, maybe don't create order or create with 0?
+
+      if (selectedOrder.remaining_amount > 0) {
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .insert([{
+            total_amount: selectedOrder.remaining_amount,
+            payment_method: method,
+            customer_id: selectedOrder.customer_id,
+            created_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (orderError) throw orderError;
+
+        // Add items for detail
+        if (orderData) {
+          await supabase.from('order_items').insert([{
+            order_id: orderData.id,
+            product_id: selectedOrder.product_id, // Might be null, handle?
+            product_name: selectedOrder.product_name,
+            quantity: selectedOrder.quantity,
+            price: selectedOrder.remaining_amount / selectedOrder.quantity // Unit price for this transaction
+          }]);
+        }
+      }
+
+      // 3. Update Cake Order Status
+      const { error: updateError } = await supabase
         .from('cake_orders')
-        .update({ status: 'completed' })
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
         .eq('id', selectedOrder.id);
 
-      if (fallbackError) {
-        console.error('Error updating order:', fallbackError);
-        alert('Lỗi khi cập nhật trạng thái đơn hàng: ' + fallbackError.message);
-        return;
-      }
-    }
+      if (updateError) throw updateError;
 
-    setSelectedOrder(null);
-    fetchOrders();
+      // Success
+      setShowDeliveryModal(false);
+      setSelectedOrder(null);
+      fetchOrders();
+      fetchRevenue();
+      alert('Đã giao hàng và ghi nhận thanh toán');
+
+    } catch (error: any) {
+      console.error('Error confirming delivery:', error);
+      alert('Lỗi: ' + error.message);
+    }
   };
 
   const selectedProductPrice = products.find(p => p.id === formData.product_id)?.price || 0;
@@ -734,15 +828,50 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </div>
 
               <div className="p-6 space-y-4 overflow-y-auto">
-                <div>
+                <div className="relative">
                   <label className="block text-xs font-bold text-gray-700 mb-1">Tên Khách hàng <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-gray-50"
-                    placeholder="Nhập tên khách hàng"
+                    placeholder="Nhập tên hoặc chọn từ danh sách"
                     value={formData.customer_name}
-                    onChange={e => setFormData({ ...formData, customer_name: e.target.value })}
+                    onChange={e => {
+                      setFormData({ ...formData, customer_name: e.target.value, customer_id: '' });
+                      setShowCustomerSuggestions(true);
+                    }}
+                    onFocus={() => setShowCustomerSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
                   />
+                  {showCustomerSuggestions && formData.customer_name && (
+                    <div className="absolute top-full left-0 right-0 z-20 bg-white border border-gray-100 rounded-xl shadow-xl mt-1 max-h-48 overflow-y-auto">
+                      {customers
+                        .filter(c => c.name.toLowerCase().includes(formData.customer_name.toLowerCase()))
+                        .map(c => (
+                          <div
+                            key={c.id}
+                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
+                            onMouseDown={() => {
+                              setFormData({
+                                ...formData,
+                                customer_name: c.name,
+                                customer_id: c.id,
+                                phone: c.phone || formData.phone,
+                                delivery_address: c.address || formData.delivery_address
+                              });
+                              setShowCustomerSuggestions(false);
+                            }}
+                          >
+                            <p className="font-bold text-sm text-gray-800">{c.name}</p>
+                            <p className="text-xs text-gray-500">{c.phone}</p>
+                          </div>
+                        ))}
+                      {customers.filter(c => c.name.toLowerCase().includes(formData.customer_name.toLowerCase())).length === 0 && (
+                        <div className="px-4 py-3 text-xs text-gray-400 italic">
+                          Nhập tên mới để tạo đơn khách vãng lai
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -907,6 +1036,46 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         )
       }
+
+
+      {/* Delivery Payment Modal */}
+      {showDeliveryModal && selectedOrder && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-xl overflow-hidden animate-slide-up">
+            <div className="p-4 bg-purple-50 border-b border-purple-100 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-purple-900">Xác nhận thanh toán</h3>
+              <button onClick={() => setShowDeliveryModal(false)} className="w-8 h-8 rounded-full bg-white text-gray-400 flex items-center justify-center shadow-sm"><span className="material-symbols-outlined">close</span></button>
+            </div>
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <p className="text-gray-500 text-sm mb-1">Số tiền cần thu (Còn lại)</p>
+                <p className="text-3xl font-bold text-primary">{selectedOrder.remaining_amount.toLocaleString()}đ</p>
+                <p className="text-xs text-gray-400 mt-2">Khách hàng: <b>{selectedOrder.customer_name}</b></p>
+              </div>
+
+              <div className="space-y-3">
+                <button onClick={() => confirmDelivery('cash')} className="w-full py-3 px-4 bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-600 transition-colors shadow-lg shadow-green-200 active:scale-95">
+                  <span className="material-symbols-outlined">payments</span>
+                  Tiền mặt
+                </button>
+                <button onClick={() => confirmDelivery('transfer')} className="w-full py-3 px-4 bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors shadow-lg shadow-blue-200 active:scale-95">
+                  <span className="material-symbols-outlined">qr_code</span>
+                  Chuyển khoản
+                </button>
+                <button
+                  disabled={!selectedOrder.customer_id}
+                  onClick={() => confirmDelivery('debt')}
+                  className={`w-full py-3 px-4 font-bold rounded-xl flex items-center justify-center gap-2 border transition-colors active:scale-95 ${selectedOrder.customer_id ? 'bg-white text-red-500 border-red-200 hover:bg-red-50' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'}`}
+                >
+                  <span className="material-symbols-outlined">account_balance_wallet</span>
+                  Ghi nợ {selectedOrder.customer_id ? '' : '(N/A)'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div >
   );
 };
